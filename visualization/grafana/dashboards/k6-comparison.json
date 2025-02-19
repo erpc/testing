@@ -1,0 +1,16 @@
+{
+  "title": "K6 Test Comparison",
+  "panels": [
+    {
+      "title": "HTTP Request Duration by Variant",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "k6_test{metric=\"http_req_duration\"}",
+          "legendFormat": "{{variant}}"
+        }
+      ]
+    }
+  ]
+} 
