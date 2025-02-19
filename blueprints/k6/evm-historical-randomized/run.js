@@ -1,5 +1,5 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check, randomSeed, sleep } from 'k6';
 import { Rate } from 'k6/metrics';
 
 // Target URL (can be configured via environment variables)
@@ -35,14 +35,15 @@ const CHAINS = {
   }
 };
 
+if (__ENV.RANDOM_SEED) {
+  randomSeed(parseInt(__ENV.RANDOM_SEED));
+}
+
 // Traffic pattern weights (in percentage, should sum to 100)
 const TRAFFIC_PATTERNS = {
   RANDOM_HISTORICAL_BLOCKS: 15,      // Fetch random blocks from history
-  LATEST_BLOCK_WITH_LOGS: 20,        // Get latest block and its transfer logs
   RANDOM_LOG_RANGES: 15,             // Get logs for random block ranges
   RANDOM_HISTORICAL_RECEIPTS: 15,    // Get random transaction receipts from history
-  LATEST_BLOCK_RECEIPTS: 15,         // Get receipts from latest block's transactions
-  RANDOM_ACCOUNT_BALANCES: 10,       // Get random account balances
   TRACE_RANDOM_TRANSACTIONS: 10,     // Trace random transactions with various methods
 };
 
@@ -97,56 +98,11 @@ function getRandomBlockRange(chain) {
   };
 }
 
-async function getLatestBlock(http, params, chain) {
-  const now = Date.now() / 1000;
-  if (chain.cached.latestBlock && (now - chain.cached.latestBlockTimestamp) < CONFIG.LATEST_BLOCK_CACHE_TTL) {
-    return chain.cached.latestBlock;
-  }
-
-  const payload = JSON.stringify({
-    jsonrpc: "2.0",
-    method: "eth_getBlockByNumber",
-    params: ["latest", false],
-    id: Math.floor(Math.random() * 100000000)
-  });
-
-  const res = await http.post(ERPC_BASE_URL + chain.id, payload, params);
-  if (res.status === 200) {
-    try {
-      const body = JSON.parse(res.body);
-      if (body.result) {
-        chain.cached.latestBlock = body.result;
-        chain.cached.latestBlockTimestamp = now;
-        return body.result;
-      }
-    } catch (e) {
-      console.error(`Failed to parse latest block response: ${e}`);
-    }
-  }
-  return null;
-}
 function randomHistoricalBlocks(http, params, chain) {
   const payload = JSON.stringify({
     jsonrpc: "2.0",
     method: "eth_getBlockByNumber",
     params: [getRandomBlock(chain), false],
-    id: Math.floor(Math.random() * 100000000)
-  });
-  return http.post(ERPC_BASE_URL + chain.id, payload, params);
-}
-
-async function latestBlockWithLogs(http, params, chain) {
-  const latestBlock = await getLatestBlock(http, params, chain);
-  if (!latestBlock) return null;
-
-  const payload = JSON.stringify({
-    jsonrpc: "2.0",
-    method: "eth_getLogs",
-    params: [{
-      fromBlock: latestBlock.number,
-      toBlock: latestBlock.number,
-      topics: [TRANSFER_EVENT_TOPIC]
-    }],
     id: Math.floor(Math.random() * 100000000)
   });
   return http.post(ERPC_BASE_URL + chain.id, payload, params);
@@ -198,34 +154,6 @@ function randomHistoricalReceipts(http, params, chain) {
     console.error(`Failed to process block response: ${e}`);
     return blockRes;
   }
-}
-
-async function latestBlockReceipts(http, params, chain) {
-  const latestBlock = await getLatestBlock(http, params, chain);
-  if (!latestBlock || !latestBlock.transactions || latestBlock.transactions.length === 0) return null;
-
-  const randomTx = latestBlock.transactions[randomIntBetween(0, latestBlock.transactions.length - 1)];
-  const payload = JSON.stringify({
-    jsonrpc: "2.0",
-    method: "eth_getTransactionReceipt",
-    params: [randomTx],
-    id: Math.floor(Math.random() * 100000000)
-  });
-  return http.post(ERPC_BASE_URL + chain.id, payload, params);
-}
-
-function randomAccountBalances(http, params, chain) {
-  // Generate a random address-like string
-  const randomAddr = '0x' + Array.from({length: 40}, () => 
-    '0123456789abcdef'[randomIntBetween(0, 15)]).join('');
-
-  const payload = JSON.stringify({
-    jsonrpc: "2.0",
-    method: "eth_getBalance",
-    params: [randomAddr, "latest"],
-    id: Math.floor(Math.random() * 100000000)
-  });
-  return http.post(ERPC_BASE_URL + chain.id, payload, params);
 }
 
 async function traceRandomTransaction(http, params, chain) {
@@ -321,20 +249,11 @@ export default async function () {
         case 'RANDOM_HISTORICAL_BLOCKS':
           res = randomHistoricalBlocks(http, params, selectedChain);
           break;
-        case 'LATEST_BLOCK_WITH_LOGS':
-          res = await latestBlockWithLogs(http, params, selectedChain);
-          break;
         case 'RANDOM_LOG_RANGES':
           res = randomLogRanges(http, params, selectedChain);
           break;
         case 'RANDOM_HISTORICAL_RECEIPTS':
           res = randomHistoricalReceipts(http, params, selectedChain);
-          break;
-        case 'LATEST_BLOCK_RECEIPTS':
-          res = await latestBlockReceipts(http, params, selectedChain);
-          break;
-        case 'RANDOM_ACCOUNT_BALANCES':
-          res = randomAccountBalances(http, params, selectedChain);
           break;
         case 'TRACE_RANDOM_TRANSACTIONS':
           res = await traceRandomTransaction(http, params, selectedChain);
