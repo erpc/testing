@@ -1,0 +1,144 @@
+name: "one-blueprint-many-variants"
+
+on:
+  workflow_dispatch:
+    inputs:
+      blueprint:
+        description: 'Select a test blueprint (e.g k6/evm-historical-randomized)'
+        required: true
+      log_level:
+        description: 'Select a log level (e.g info, debug, trace)'
+        required: false
+        default: 'disabled'
+
+jobs:
+  run-test:
+    name: "${{ matrix.variant }} - ${{ github.event.inputs.blueprint }}"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        variant:
+          - latest/no-config-defaults
+          - latest/only-network-level-failsafe
+        include:
+          - variant: latest/no-config-defaults
+            port_offset: 1
+          - variant: latest/only-network-level-failsafe
+            port_offset: 2
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install k6
+        run: |
+          curl -L https://github.com/grafana/k6/releases/download/v0.57.0/k6-v0.57.0-linux-amd64.tar.gz -o k6.tar.gz
+          tar xzf k6.tar.gz
+          sudo cp k6-v0.57.0-linux-amd64/k6 /usr/local/bin/
+          k6 version
+
+      - name: Setup Docker and Docker Compose
+        uses: docker/setup-buildx-action@v2
+        with:
+          install: true
+
+      - name: Calculate ports
+        id: ports
+        run: |
+          echo "ERPC_HTTP_PORT=$((4000 + ${{ matrix.port_offset }}))" >> $GITHUB_ENV
+          echo "ERPC_METRICS_PORT=$((5000 + ${{ matrix.port_offset }}))" >> $GITHUB_ENV
+          echo "ERPC_PPROF_PORT=$((6000 + ${{ matrix.port_offset }}))" >> $GITHUB_ENV
+
+      - name: Start eRPC
+        uses: hoverkraft-tech/compose-action@v2.0.1
+        env:
+          ERPC_HTTP_PORT: ${{ env.ERPC_HTTP_PORT }}
+          ERPC_METRICS_PORT: ${{ env.ERPC_METRICS_PORT }}
+          ERPC_PPROF_PORT: ${{ env.ERPC_PPROF_PORT }}
+
+          LOG_LEVEL: ${{ github.event.inputs.log_level }}
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+          # TENDERLY_ACCESS_KEY: ${{ secrets.TENDERLY_ACCESS_KEY }}
+          # DWELLIR_API_KEY: ${{ secrets.DWELLIR_API_KEY }}
+          BLAST_API_KEY: ${{ secrets.BLAST_API_KEY }}
+          # CHAINSTACK_ARB_KEY: ${{ secrets.CHAINSTACK_ARB_KEY }}
+          # CHAINSTACK_ETH_KEY: ${{ secrets.CHAINSTACK_ETH_KEY }}
+          # CHAINSTACK_BASE_KEY: ${{ secrets.CHAINSTACK_BASE_KEY }}
+          # QUICKNODE_ARB_ENDPOINT: ${{ secrets.QUICKNODE_ARB_ENDPOINT }}
+          # QUICKNODE_ETH_ENDPOINT: ${{ secrets.QUICKNODE_ETH_ENDPOINT }}
+          # QUICKNODE_BASE_ENDPOINT: ${{ secrets.QUICKNODE_BASE_ENDPOINT }}
+          # ONFINALITY_API_KEY: ${{ secrets.ONFINALITY_API_KEY }}
+        with:
+          compose-file: variants/${{ matrix.variant }}/docker-compose.yml
+          up-flags: "-d"
+          # compose-version: "v2.24.6"
+
+      - name: Wait for eRPC
+        run: |
+          MAX_RETRIES=5
+          URL="http://localhost:${ERPC_HTTP_PORT}"
+          echo "Waiting for eRPC to be ready... ($i/$MAX_RETRIES) on $URL"
+          for i in {1..$MAX_RETRIES}; do
+            if curl -sf $URL >/dev/null; then
+              echo "eRPC is ready on $URL"
+              exit 0
+            fi
+            echo "Waiting for eRPC to be ready... ($i/$MAX_RETRIES) on $URL"
+            sleep 2
+          done
+          echo "eRPC failed to become ready on $URL"
+          exit 1
+
+      # - name: Capture initial pprof heap profile
+      #   run: |
+      #     mkdir -p test-results/${{ matrix.variant }}/pprof
+      #     curl -s "http://localhost:$ERPC_PPROF_PORT/debug/pprof/heap" \
+      #       -o test-results/${{ matrix.variant }}/pprof/heap-before.pprof
+
+      - name: Run blueprint test (k6)
+        if: contains(github.event.inputs.blueprint, 'k6/')
+        run: |
+          mkdir -p test-results/${{ matrix.variant }}
+          k6 run \
+            --out json=test-results/${{ matrix.variant }}/results.json \
+            --out csv=test-results/${{ matrix.variant }}/metrics.csv \
+            blueprints/${{ github.event.inputs.blueprint }}/run.js
+        env:
+          ERPC_BASE_URL: "http://localhost:${{ env.ERPC_HTTP_PORT }}/main/evm/"
+          # Pass all required secrets to k6
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+          # TENDERLY_ACCESS_KEY: ${{ secrets.TENDERLY_ACCESS_KEY }}
+          # DWELLIR_API_KEY: ${{ secrets.DWELLIR_API_KEY }}
+          BLAST_API_KEY: ${{ secrets.BLAST_API_KEY }}
+          # CHAINSTACK_ARB_KEY: ${{ secrets.CHAINSTACK_ARB_KEY }}
+          # CHAINSTACK_ETH_KEY: ${{ secrets.CHAINSTACK_ETH_KEY }}
+          # CHAINSTACK_BASE_KEY: ${{ secrets.CHAINSTACK_BASE_KEY }}
+          # QUICKNODE_ARB_ENDPOINT: ${{ secrets.QUICKNODE_ARB_ENDPOINT }}
+          # QUICKNODE_ETH_ENDPOINT: ${{ secrets.QUICKNODE_ETH_ENDPOINT }}
+          # QUICKNODE_BASE_ENDPOINT: ${{ secrets.QUICKNODE_BASE_ENDPOINT }}
+          # ONFINALITY_API_KEY: ${{ secrets.ONFINALITY_API_KEY }}
+
+      # - name: Capture final pprof heap profile
+      #   run: |
+      #     curl -s "http://localhost:$ERPC_PPROF_PORT/debug/pprof/heap" \
+      #       -o test-results/${{ matrix.variant }}/pprof/heap-after.pprof
+
+      - name: Create safe artifact name
+        id: safe-name
+        run: |
+          SAFE_NAME=$(echo "${{ matrix.variant }}" | tr '/' '-')
+          echo "name=${SAFE_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.safe-name.outputs.name }}
+          path: test-results/${{ matrix.variant }}
+          retention-days: 30
+          compression-level: 6
+          overwrite: true
+
+      - name: Teardown
+        run: |
+          cd variants/${{ matrix.variant }}
+          docker-compose down -v

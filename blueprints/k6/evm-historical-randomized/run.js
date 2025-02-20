@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { check, randomSeed, sleep } from 'k6';
-import { Rate } from 'k6/metrics';
+import { Rate, Counter, Trend, Gauge } from 'k6/metrics';
 
 // Target URL (can be configured via environment variables)
 // const ERPC_BASE_URL = __ENV.ERPC_BASE_URL || 'http://localhost:4000/main/evm/1';
@@ -61,7 +61,7 @@ export const options = {
       executor: 'constant-arrival-rate',
       rate: 10,
       timeUnit: '1s',
-      duration: '100m',
+      duration: '1m',
       preAllocatedVUs: 500,
       maxVUs: 500,
     },
@@ -79,6 +79,24 @@ const errorRate = new Rate('errors');
 
 // Common ERC20 Transfer event topic
 const TRANSFER_EVENT_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+
+// Add new metrics
+const requestsByChain = {};
+Object.keys(CHAINS).forEach(chain => {
+  requestsByChain[chain] = new Counter(`requests_${chain.toLowerCase()}`);
+});
+
+const requestsByType = {
+  blocks: new Counter('requests_historical_blocks'),
+  logs: new Counter('requests_log_ranges'),
+  receipts: new Counter('requests_historical_receipts'),
+  traces: new Counter('requests_traces'),
+};
+
+const responseSizes = new Trend('response_sizes');
+const responseTimings = new Trend('response_times');
+const activeRequests = new Gauge('active_requests');
+const successfulTraces = new Counter('successful_traces');
 
 function getRandomChain() {
   const chains = Object.values(CHAINS);
@@ -229,6 +247,9 @@ function randomIntBetween(min, max) {
 
 // Main test function
 export default async function () {
+  activeRequests.add(1);  // Increment active requests counter
+  const startTime = Date.now();
+  
   const params = {
     headers: { 'Content-Type': 'application/json' },
     insecureSkipTLSVerify: true,
@@ -238,6 +259,8 @@ export default async function () {
   
   // Randomly select traffic pattern based on weights
   const selectedChain = getRandomChain();
+  requestsByChain[Object.keys(CHAINS).find(key => CHAINS[key] === selectedChain)].add(1);
+  
   const rand = Math.random() * 100;
   let cumulativeWeight = 0;
   let res;
@@ -247,15 +270,19 @@ export default async function () {
     if (rand <= cumulativeWeight) {
       switch (pattern) {
         case 'RANDOM_HISTORICAL_BLOCKS':
+          requestsByType.blocks.add(1);
           res = randomHistoricalBlocks(http, params, selectedChain);
           break;
         case 'RANDOM_LOG_RANGES':
+          requestsByType.logs.add(1);
           res = randomLogRanges(http, params, selectedChain);
           break;
         case 'RANDOM_HISTORICAL_RECEIPTS':
+          requestsByType.receipts.add(1);
           res = randomHistoricalReceipts(http, params, selectedChain);
           break;
         case 'TRACE_RANDOM_TRANSACTIONS':
+          requestsByType.traces.add(1);
           res = await traceRandomTransaction(http, params, selectedChain);
           break;
       }
@@ -267,6 +294,20 @@ export default async function () {
   // res = http.post(ERPC_BASE_URL, JSON.stringify(sampleReq), params);
 
   if (res) {
+    // Track response metrics
+    responseSizes.add(res.body.length);
+    responseTimings.add(Date.now() - startTime);
+
+    // Track successful traces
+    if (res.status === 200 && res.request.body.includes('debug_traceTransaction')) {
+      try {
+        const body = JSON.parse(res.body);
+        if (body.result && !body.error) {
+          successfulTraces.add(1);
+        }
+      } catch (e) {}
+    }
+
     check(res, {
       'status is 200': (r) => r.status === 200,
       'response has no error': (r) => {
@@ -292,4 +333,6 @@ export default async function () {
 
     errorRate.add(res.status !== 200);
   }
+
+  activeRequests.add(-1);  // Decrement active requests counter
 }

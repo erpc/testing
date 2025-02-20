@@ -1,0 +1,84 @@
+logLevel: ${LOG_LEVEL}
+
+server:
+  httpPort: 4000
+
+projects:
+  - id: main
+    networks:
+      - architecture: evm
+        evm:
+          chainId: 1  # Ethereum
+        failsafe:
+          timeout:
+            duration: 30s
+          retry:
+            maxAttempts: 3
+            delay: 100ms
+            backoffMaxDelay: 3s
+          hedge:
+            delay: 500ms
+            maxCount: 2
+
+      - architecture: evm
+        evm:
+          chainId: 42161  # Arbitrum
+        failsafe:
+          timeout:
+            duration: 45s
+          retry:
+            maxAttempts: 2
+            delay: 500ms
+            backoffMaxDelay: 5s
+          hedge:
+            delay: 1s
+            maxCount: 1
+
+      - architecture: evm
+        evm:
+          chainId: 8453  # Base
+        failsafe:
+          timeout:
+            duration: 30s
+          retry:
+            maxAttempts: 3
+            delay: 200ms
+            backoffMaxDelay: 3s
+          hedge:
+            delay: 750ms
+            maxCount: 2
+
+    upstreams:      
+      - endpoint: alchemy://${ALCHEMY_API_KEY}
+      - endpoint: envio://rpc.hypersync.xyz
+
+      # # Tenderly
+      # - endpoint: https://arbitrum.gateway.tenderly.co/${TENDERLY_ACCESS_KEY}
+      # - endpoint: https://mainnet.gateway.tenderly.co/${TENDERLY_ACCESS_KEY}
+      # - endpoint: https://base.gateway.tenderly.co/${TENDERLY_ACCESS_KEY}
+
+      # # Dwellir
+      # - endpoint: https://api-eth-mainnet-archive-reth.dwellir.com/${DWELLIR_API_KEY}
+      # - endpoint: https://api-arbitrum-mainnet-archive.dwellir.com/${DWELLIR_API_KEY}
+      # - endpoint: https://api-base-mainnet-archive.dwellir.com/${DWELLIR_API_KEY}
+
+      # BlastAPI
+      - endpoint: https://arbitrum-one.blastapi.io/${BLAST_API_KEY}
+      - endpoint: https://eth-mainnet.blastapi.io/${BLAST_API_KEY}
+      - endpoint: https://base-mainnet.blastapi.io/${BLAST_API_KEY}
+
+      # # Chainstack
+      # - endpoint: https://arbitrum-mainnet.core.chainstack.com/${CHAINSTACK_ARB_KEY}
+      # - endpoint: https://ethereum-mainnet.core.chainstack.com/${CHAINSTACK_ETH_KEY}
+      # - endpoint: https://base-mainnet.core.chainstack.com/${CHAINSTACK_BASE_KEY}
+      
+      # # QuickNode
+      # - endpoint: ${QUICKNODE_ARB_ENDPOINT}
+      # - endpoint: ${QUICKNODE_ETH_ENDPOINT}
+      # - endpoint: ${QUICKNODE_BASE_ENDPOINT}
+
+      # # OnFinality
+      # - endpoint: https://arbitrum.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}
+      # - endpoint: https://eth.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}
+      # - endpoint: https://base.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}
+
