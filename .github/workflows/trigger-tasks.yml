@@ -1,47 +1,56 @@
-name: "one-blueprint-many-variants"
+name: "trigger-tasks"
 
 on:
   workflow_dispatch:
     inputs:
-      blueprint:
-        description: 'Select a test blueprint (e.g k6/evm-historical-randomized)'
+      variant_regexp:
+        description: 'Regex pattern to match variants (e.g. ".*" or ".*no-config-defaults.*")'
         required: true
+        default: '.*'
+      blueprint_regexp:
+        description: 'Regex pattern to match blueprints (e.g. ".*" or "k6/.*")'
+        required: true
+        default: '.*'
       versions:
-        description: 'Comma-separated list of eRPC versions to test (e.g., "latest,0.0.35,main")'
+        description: 'Comma-separated list of eRPC versions to test (e.g., ["latest","0.0.35","main"])'
         required: false
-        default: 'latest'
+        default: '["latest","main"]'
       log_level:
         description: 'Select a log level (e.g info, debug, trace)'
         required: false
         default: 'disabled'
 
 jobs:
-  discover-variants:
+  discover-matrix:
     runs-on: ubuntu-latest
     outputs:
-      variants: ${{ steps.set-variants.outputs.variants }}
+      variants: ${{ steps.set-matrix.outputs.variants }}
+      blueprints: ${{ steps.set-matrix.outputs.blueprints }}
     steps:
       - uses: actions/checkout@v3
-      - id: set-variants
+      
+      - id: set-matrix
         run: |
-          VARIANTS=$(ls -d variants/*/ | cut -d'/' -f2 | jq -R -s -c 'split("\n")[:-1]')
+          # Discover variants matching the pattern
+          VARIANTS=$(ls -d variants/*/*/ | cut -d'/' -f2,3 | grep -E "${{ github.event.inputs.variant_regexp }}" | jq -R -s -c 'split("\n")[:-1]')
           echo "variants=${VARIANTS}" >> $GITHUB_OUTPUT
+          
+          # Discover blueprints matching the pattern
+          BLUEPRINTS=$(ls -d blueprints/*/* | cut -d'/' -f2,3 | grep -E "${{ github.event.inputs.blueprint_regexp }}" | jq -R -s -c 'split("\n")[:-1]')
+          echo "blueprints=${BLUEPRINTS}" >> $GITHUB_OUTPUT
 
   run-test:
-    needs: discover-variants
-    name: "${{ matrix.version }} / ${{ matrix.variant }} - ${{ github.event.inputs.blueprint }}"
+    needs: discover-matrix
+    name: "${{ matrix.version }} | ${{ matrix.variant }} | ${{ matrix.blueprint }}"
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version: ${{ fromJson('["' + replace(github.event.inputs.versions, ',', '","') + '"]') }}
-        variant: ${{ fromJson(needs.discover-variants.outputs.variants) }}
+        version: ${{ fromJson(github.event.inputs.versions) }}
+        variant: ${{ fromJson(needs.discover-matrix.outputs.variants) }}
+        blueprint: ${{ fromJson(needs.discover-matrix.outputs.blueprints) }}
         job-index: [0]
-        # include:
-        #   - variant: latest/no-config-defaults
-        #     port_offset: 1
-        #   - variant: latest/only-network-level-failsafe
-        #     port_offset: 2
-      job-index: [0] # This enables job index tracking
+      fail-fast: false
+      max-parallel: 5
 
     steps:
       - name: Checkout
@@ -62,23 +71,27 @@ jobs:
       - name: Calculate ports
         id: ports
         run: |
-          # Create a unique number (0-99) based on hash of variant and version
-          # HASH=$(echo "${{ matrix.variant }}${{ matrix.version }}" | md5sum | tr -d '[a-z]' | cut -c1-2)
-          # PORT_OFFSET=$((HASH % 100))
-          PORT_OFFSET=$((strategy.job-index + 1))
+          PORT_OFFSET=$((${{ strategy.job-index }} + 1))
           
           echo "ERPC_HTTP_PORT=$((4000 + PORT_OFFSET))" >> $GITHUB_ENV
           echo "ERPC_METRICS_PORT=$((5000 + PORT_OFFSET))" >> $GITHUB_ENV
           echo "ERPC_PPROF_PORT=$((6000 + PORT_OFFSET))" >> $GITHUB_ENV
 
+      - name: Set results directory
+        id: set-dirs
+        run: |
+          RESULTS_DIR="test-results/${{ matrix.version }}/${{ matrix.variant }}/${{ matrix.blueprint }}"
+          echo "RESULTS_DIR=${RESULTS_DIR}" >> $GITHUB_ENV
+          mkdir -p "${RESULTS_DIR}/pprof"
+
       - name: Start eRPC
         uses: hoverkraft-tech/compose-action@v2.0.1
         env:
+          COMPOSE_PROJECT_NAME: variant-${{ strategy.job-index }}
           ERPC_VERSION: ${{ matrix.version }}
           ERPC_HTTP_PORT: ${{ env.ERPC_HTTP_PORT }}
           ERPC_METRICS_PORT: ${{ env.ERPC_METRICS_PORT }}
           ERPC_PPROF_PORT: ${{ env.ERPC_PPROF_PORT }}
-
           LOG_LEVEL: ${{ github.event.inputs.log_level }}
           ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
           # TENDERLY_ACCESS_KEY: ${{ secrets.TENDERLY_ACCESS_KEY }}
@@ -94,7 +107,6 @@ jobs:
         with:
           compose-file: variants/${{ matrix.variant }}/docker-compose.yml
           up-flags: "-d"
-          # compose-version: "v2.24.6"
 
       - name: Wait for eRPC
         run: |
@@ -112,20 +124,31 @@ jobs:
           echo "eRPC failed to become ready on $URL"
           exit 1
 
-      # - name: Capture initial pprof heap profile
-      #   run: |
-      #     mkdir -p test-results/${{ matrix.variant }}/pprof
-      #     curl -s "http://localhost:$ERPC_PPROF_PORT/debug/pprof/heap" \
-      #       -o test-results/${{ matrix.variant }}/pprof/heap-before.pprof
+      - name: Capture initial pprof heap profile
+        run: |
+          # Attempt to capture heap profile with retry logic
+          MAX_RETRIES=3
+          for i in $(seq 1 $MAX_RETRIES); do
+            if curl -sf "http://localhost:${{ env.ERPC_PPROF_PORT }}/debug/pprof/heap" \
+               -o "${RESULTS_DIR}/pprof/heap-before.pprof"; then
+              echo "Successfully captured initial heap profile"
+              break
+            fi
+            if [ $i -eq $MAX_RETRIES ]; then
+              echo "Failed to capture heap profile after $MAX_RETRIES attempts"
+              exit 1
+            fi
+            echo "Attempt $i failed, retrying in 2 seconds..."
+            sleep 2
+          done
 
       - name: Run blueprint test (k6)
-        if: contains(github.event.inputs.blueprint, 'k6/')
+        if: contains(matrix.blueprint, 'k6/')
         run: |
-          mkdir -p test-results/${{ matrix.variant }}
           k6 run \
-            --out json=test-results/${{ matrix.variant }}/results.json \
-            --out csv=test-results/${{ matrix.variant }}/metrics.csv \
-            blueprints/${{ github.event.inputs.blueprint }}/run.js
+            --out json="${RESULTS_DIR}/results.json" \
+            --out csv="${RESULTS_DIR}/metrics.csv" \
+            "blueprints/${{ matrix.blueprint }}/run.js"
         env:
           ERPC_BASE_URL: "http://localhost:${{ env.ERPC_HTTP_PORT }}/main/evm/"
           # Pass all required secrets to k6
@@ -141,27 +164,45 @@ jobs:
           # QUICKNODE_BASE_ENDPOINT: ${{ secrets.QUICKNODE_BASE_ENDPOINT }}
           # ONFINALITY_API_KEY: ${{ secrets.ONFINALITY_API_KEY }}
 
-      # - name: Capture final pprof heap profile
-      #   run: |
-      #     curl -s "http://localhost:$ERPC_PPROF_PORT/debug/pprof/heap" \
-      #       -o test-results/${{ matrix.variant }}/pprof/heap-after.pprof
+      - name: Capture final pprof heap profile
+        if: always()
+        run: |
+          # Attempt to capture heap profile with retry logic
+          MAX_RETRIES=3
+          for i in $(seq 1 $MAX_RETRIES); do
+            if curl -sf "http://localhost:${{ env.ERPC_PPROF_PORT }}/debug/pprof/heap" \
+               -o "${RESULTS_DIR}/pprof/heap-after.pprof"; then
+              echo "Successfully captured final heap profile"
+              break
+            fi
+            
+            if [ $i -eq $MAX_RETRIES ]; then
+              echo "Failed to capture heap profile after $MAX_RETRIES attempts"
+              exit 1
+            fi
+            
+            echo "Attempt $i failed, retrying in 2 seconds..."
+            sleep 2
+          done
 
       - name: Create safe artifact name
         id: safe-name
         run: |
-          SAFE_NAME=$(echo "${{ matrix.version }}-${{ matrix.variant }}" | tr '/' '-')
+          SAFE_NAME=$(echo "${{ matrix.version }}-${{ matrix.variant }}-${{ matrix.blueprint }}" | tr '/' '-')
           echo "name=${SAFE_NAME}" >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.safe-name.outputs.name }}
-          path: test-results/${{ matrix.variant }}
+          path: ${{ env.RESULTS_DIR }}
           retention-days: 30
           compression-level: 6
           overwrite: true
 
       - name: Teardown
+        if: always()
         run: |
           cd variants/${{ matrix.variant }}
-          docker-compose down -v
+          export COMPOSE_PROJECT_NAME=variant-${{ strategy.job-index }}
+          docker compose down -v --remove-orphans
