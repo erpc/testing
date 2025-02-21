@@ -1,3 +1,8 @@
+# Ignore all files in the root directory
 .DS_Store
+
+# Ignore all node_modules directories
 **/node_modules/
-**/docker-compose.yaml
+
+# Ignore the docker-compose.yaml file in the scripts directory
+scripts/docker-compose.yaml
