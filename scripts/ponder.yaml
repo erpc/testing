@@ -1,0 +1,11 @@
+- variant: latest/no-config-defaults
+  blueprint: ponder/basepaint
+
+- variant: latest/no-config-defaults
+  blueprint: ponder/friendtech
+
+- variant: latest/only-network-level-failsafe
+  blueprint: ponder/basepaint
+  
+- variant: latest/only-network-level-failsafe
+  blueprint: ponder/friendtech
