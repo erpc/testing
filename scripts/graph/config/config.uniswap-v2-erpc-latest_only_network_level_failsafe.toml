@@ -1,0 +1,18 @@
+[store]
+[store.primary]
+connection = "postgresql://graph-node:let-me-in@postgres:5432/graph-node"
+pool_size = 10
+
+[deployment]
+[[deployment.rule]]
+store = "primary"
+indexers = ["default"]
+
+[chains]
+ingestor = "default"
+
+[chains.mainnet]
+shard = "primary"
+provider = [
+  { label = "erpc", url = "http://erpc-latest_only_network_level_failsafe:4000/main/evm/1", features = ["archive"] }
+]

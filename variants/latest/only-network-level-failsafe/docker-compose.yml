@@ -1,0 +1,29 @@
+services:
+  erpc:
+    image: ghcr.io/erpc/erpc:latest
+    restart: unless-stopped
+    command: ["/root/erpc-server-pprof"]
+    ports:
+      - "${ERPC_HTTP_PORT}:4000"
+      - "${ERPC_METRICS_PORT}:4001"
+    volumes:
+      - ./erpc.yaml:/root/erpc.yaml
+    networks:
+      - erpc
+    environment:
+      LOG_LEVEL: "${LOG_LEVEL}"
+      ALCHEMY_API_KEY: "${ALCHEMY_API_KEY}"
+      # TENDERLY_ACCESS_KEY: "${TENDERLY_ACCESS_KEY}"
+      # DWELLIR_API_KEY: "${DWELLIR_API_KEY}"
+      BLAST_API_KEY: "${BLAST_API_KEY}"
+      # CHAINSTACK_ARB_KEY: "${CHAINSTACK_ARB_KEY}"
+      # CHAINSTACK_ETH_KEY: "${CHAINSTACK_ETH_KEY}"
+      # CHAINSTACK_BASE_KEY: "${CHAINSTACK_BASE_KEY}"
+      # QUICKNODE_ARB_ENDPOINT: "${QUICKNODE_ARB_ENDPOINT}"
+      # QUICKNODE_ETH_ENDPOINT: "${QUICKNODE_ETH_ENDPOINT}"
+      # QUICKNODE_BASE_ENDPOINT: "${QUICKNODE_BASE_ENDPOINT}"
+      # ONFINALITY_API_KEY: "${ONFINALITY_API_KEY}"
+
+networks:
+  erpc:
+    driver: bridge

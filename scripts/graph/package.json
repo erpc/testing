@@ -1,0 +1,17 @@
+{
+  "name": "integration",
+  "version": "1.0.0",
+  "description": "Graph + eRPC integration testing",
+  "type": "module",
+  "scripts": {
+    "generate": "npm i && node graph.js && docker compose -f docker-compose.graph.yaml up -d",
+    "deploy": "node deploy.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "execa": "^9.5.2",
+    "fs": "0.0.1-security",
+    "js-yaml": "^4.1.0",
+    "yaml": "^2.3.1"
+  }
+}
