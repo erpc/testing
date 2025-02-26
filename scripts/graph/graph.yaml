@@ -1,6 +1,9 @@
 - variant: latest/no-config-defaults
   blueprint: graph/uniswap-v2
 
-- variant: latest/only-network-level-failsafe
-  blueprint: graph/uniswap-v2
+- variant: latest/no-config-defaults
+  blueprint: graph/uniswap-v3
+
+- variant: latest/no-config-defaults
+  blueprint: graph/uniswap-v4
 

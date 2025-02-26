@@ -14,5 +14,5 @@ ingestor = "default"
 [chains.mainnet]
 shard = "primary"
 provider = [
-  { label = "erpc", url = "http://erpc-latest_only_network_level_failsafe:4000/main/evm/1", features = ["archive"] }
+  { label = "erpc", url = "http://erpc-latest_no_config_defaults:4000/main/evm/1", features = ["archive"] }
 ]

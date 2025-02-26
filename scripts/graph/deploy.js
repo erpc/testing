@@ -8,16 +8,22 @@ const subgraphs = [
     "folder": "../../blueprints/graph/uniswap-v2"
   },
   {
-    "name": "uniswap-v2-latest_only_network_level_failsafe",
+    "name": "uniswap-v3-latest_no_config_defaults",
     "node": "http://localhost:8120",
     "ipfs": "http://localhost:5001",
-    "folder": "../../blueprints/graph/uniswap-v2"
+    "folder": "../../blueprints/graph/uniswap-v3"
+  },
+  {
+    "name": "uniswap-v4-latest_no_config_defaults",
+    "node": "http://localhost:8220",
+    "ipfs": "http://localhost:5001",
+    "folder": "../../blueprints/graph/uniswap-v4"
   }
 ];
 
 for (const s of subgraphs) {
   console.log("\n=== Installing dependencies for: " + s.name + " ===");
-  
+
   // Run npm install first
   const installResult = spawnSync("npm", ["install", "--legacy-peer-deps"], {
     stdio: "inherit",
@@ -29,9 +35,24 @@ for (const s of subgraphs) {
     process.exit(installResult.status);
   }
 
+  // Run codegen to generate the types folder
+  console.log("\n=== Generating types for: " + s.name + " ===");
+
+  const codegenResult = spawnSync("graph", [
+    "codegen",
+    "--output-dir", "src/types/"
+  ], {
+    stdio: "inherit",
+    cwd: s.folder
+  });
+  if (codegenResult.status !== 0) {
+    console.error(`❌ Failed to run codegen for "${s.name}"`);
+    process.exit(codegenResult.status);
+  }
+
   console.log("\n=== Deploying subgraph: " + s.name + " ===");
 
-  // 1) graph create <subgraph> --node <url>, run from the subgraph folder
+  // 1) graph create <subgraph> --node <url>
   const createResult = spawnSync("graph", [
     "create",
     s.name,
@@ -46,7 +67,7 @@ for (const s of subgraphs) {
     process.exit(createResult.status);
   }
 
-  // 2) graph deploy <subgraph> subgraph.yaml --ipfs <ipfs> --node <node>, also from the subgraph folder
+  // 2) graph deploy <subgraph> subgraph.yaml --ipfs <ipfs> --node <node>
   const deployResult = spawnSync("graph", [
     "deploy",
     s.name,

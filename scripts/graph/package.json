@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "generate": "npm i && node graph.js && docker compose -f docker-compose.graph.yaml up -d",
-    "deploy": "node deploy.js"
+    "deploy": "node deploy.js",
+    "clean": "docker compose -f docker-compose.graph.yaml down -v --rmi all"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

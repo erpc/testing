@@ -52,13 +52,6 @@ services:
       - '4000:4000'
       - '4001:4001'
     restart: always
-  erpc-latest_only_network_level_failsafe:
-    image: ghcr.io/erpc/erpc:latest
-    container_name: erpc-latest_only_network_level_failsafe
-    expose:
-      - '4000:4000'
-      - '4001:4001'
-    restart: always
   graph-node-uniswap-v2-with-erpc-latest_no_config_defaults:
     image: graphprotocol/graph-node
     container_name: graph-node-uniswap-v2-with-erpc-latest_no_config_defaults
@@ -85,9 +78,10 @@ services:
       GRAPH_NODE_CONFIG: /etc/config/config.uniswap-v2-erpc-latest_no_config_defaults.toml
       GRAPH_LOG: info
     restart: 'no'
-  graph-node-uniswap-v2-with-erpc-latest_only_network_level_failsafe:
+    platform: linux/amd64
+  graph-node-uniswap-v3-with-erpc-latest_no_config_defaults:
     image: graphprotocol/graph-node
-    container_name: graph-node-uniswap-v2-with-erpc-latest_only_network_level_failsafe
+    container_name: graph-node-uniswap-v3-with-erpc-latest_no_config_defaults
     ports:
       - '8100:8000'
       - '8101:8001'
@@ -97,7 +91,7 @@ services:
     depends_on:
       - ipfs
       - postgres
-      - erpc-latest_only_network_level_failsafe
+      - erpc-latest_no_config_defaults
     extra_hosts:
       - host.docker.internal:host-gateway
     volumes:
@@ -108,7 +102,52 @@ services:
       postgres_pass: let-me-in
       postgres_db: graph-node
       ipfs: ipfs:5001
-      GRAPH_NODE_CONFIG: >-
-        /etc/config/config.uniswap-v2-erpc-latest_only_network_level_failsafe.toml
+      GRAPH_NODE_CONFIG: /etc/config/config.uniswap-v3-erpc-latest_no_config_defaults.toml
       GRAPH_LOG: info
     restart: 'no'
+    platform: linux/amd64
+  graph-node-uniswap-v4-with-erpc-latest_no_config_defaults:
+    image: graphprotocol/graph-node
+    container_name: graph-node-uniswap-v4-with-erpc-latest_no_config_defaults
+    ports:
+      - '8200:8000'
+      - '8201:8001'
+      - '8220:8020'
+      - '8230:8030'
+      - '8240:8040'
+    depends_on:
+      - ipfs
+      - postgres
+      - erpc-latest_no_config_defaults
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - ./config:/etc/config
+    environment:
+      postgres_host: postgres
+      postgres_user: graph-node
+      postgres_pass: let-me-in
+      postgres_db: graph-node
+      ipfs: ipfs:5001
+      GRAPH_NODE_CONFIG: /etc/config/config.uniswap-v4-erpc-latest_no_config_defaults.toml
+      GRAPH_LOG: info
+    restart: 'no'
+    platform: linux/amd64
+  monitoring:
+    build: ./monitoring
+    ports:
+      - '3000:3000'
+      - '9090:9090'
+    depends_on:
+      - graph-node-uniswap-v2-with-erpc-latest_no_config_defaults
+      - graph-node-uniswap-v3-with-erpc-latest_no_config_defaults
+      - graph-node-uniswap-v4-with-erpc-latest_no_config_defaults
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - ./monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards
+      - prometheus_data:/prometheus
+      - grafana_data:/var/lib/grafana
+volumes:
+  prometheus_data: {}
+  grafana_data: {}

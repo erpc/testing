@@ -7,7 +7,6 @@ const __filename = fileURLToPath(import.meta.url);
 const scriptRoot = path.dirname(__filename);
 const projectRoot = path.join(scriptRoot);
 
-// 1. Load combos.yaml
 const combosFile = path.join(scriptRoot, "graph.yaml");
 if (!fs.existsSync(combosFile)) {
   throw new Error(`❌ Could not find '${combosFile}'`);
@@ -223,6 +222,10 @@ for (const combo of uniqueGraphCombos) {
     restart: "no"
   };
 
+  if (process.platform === "darwin" && process.arch === "arm64") {
+    services[graphNodeServiceName].platform = "linux/amd64";
+  }
+
   // 4. Determine the indexing API host port (8020 in container)
   const indexingApiContainerPort = 8020; // basePorts[2]
   const containerPortIndex = basePorts.indexOf(indexingApiContainerPort);
@@ -231,13 +234,10 @@ for (const combo of uniqueGraphCombos) {
   }
   const indexingApiHostPort = indexingApiContainerPort + portOffset;
 
-  // 5. We want to store enough info to run "graph create" and "graph deploy"
-  // so we'll track the folder path for subgraph.yaml, which is ../blueprints/<bpName>
+  // 5. Track subgraph info for the deploy-subgraphs.js
   const subgraphFolder = path.join("..", "..", "blueprints", bpType, bpName);
-
-  // We'll push a new subgraph definition for "deploy-subgraphs.js"
   subgraphDeployments.push({
-    name: `${bpName}-${safeVariant}`,      // e.g. "uniswap-v2-latest_no_config_defaults"
+    name: `${bpName}-${safeVariant}`,
     node: `http://localhost:${indexingApiHostPort}`,
     ipfs: "http://localhost:5001",
     folder: subgraphFolder
@@ -247,15 +247,76 @@ for (const combo of uniqueGraphCombos) {
 }
 
 // --------------------------------------------------------------------------
-// F. Write out docker-compose.graph.yaml
+// F. Add Prometheus and Grafana exactly as in your snippet
 // --------------------------------------------------------------------------
-const dockerCompose = { services };
+
+// First, figure out which Graph Node services were generated so we can list them under `depends_on`.
+const allGraphNodeKeys = Object.keys(services).filter((k) => k.startsWith("graph-node-"));
+
+services.monitoring = {
+  build: "./monitoring",
+  ports: ["3000:3000", "9090:9090"],
+  depends_on: allGraphNodeKeys,
+  volumes: [
+    "./monitoring/prometheus:/etc/prometheus",
+    "./monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini",
+    "./monitoring/grafana/dashboards:/etc/grafana/dashboards",
+    "prometheus_data:/prometheus",
+    "grafana_data:/var/lib/grafana"
+  ]
+};
+
+// --------------------------------------------------------------------------
+// F.1 Generate prometheus.yml configuration
+// --------------------------------------------------------------------------
+const prometheusConfig = {
+  global: {
+    scrape_interval: "15s"
+  },
+  scrape_configs: []
+};
+
+// For each Graph Node service, add a scrape config
+for (const serviceName of allGraphNodeKeys) {
+  // Extract the blueprint name from the service name
+  // e.g., "graph-node-uniswap-v2-with-erpc-latest_no_config_defaults"
+  const matches = serviceName.match(/graph-node-(.+)-with-/);
+  if (!matches) continue;
+  
+  const blueprintName = matches[1];
+  
+  prometheusConfig.scrape_configs.push({
+    job_name: `graph-node-${blueprintName}`,
+    static_configs: [{
+      targets: [`${serviceName}:8040`]
+    }]
+  });
+}
+
+// Create monitoring directory and write prometheus.yml
+const monitoringDir = path.join(projectRoot, "monitoring", "prometheus");
+fs.mkdirSync(monitoringDir, { recursive: true });
+const prometheusPath = path.join(monitoringDir, "prometheus.yml");
+fs.writeFileSync(prometheusPath, yaml.dump(prometheusConfig), "utf8");
+console.log(`✅ Generated Prometheus config: ${path.relative(projectRoot, prometheusPath)}`);
+
+// --------------------------------------------------------------------------
+// G. Write out docker-compose.graph.yaml (including a named volume for Grafana)
+// --------------------------------------------------------------------------
+const dockerCompose = {
+  services,
+  volumes: {
+    prometheus_data: {},
+    grafana_data: {}
+  }
+};
+
 const outComposeFile = path.join(projectRoot, "docker-compose.graph.yaml");
 fs.writeFileSync(outComposeFile, yaml.dump(dockerCompose), "utf8");
 console.log(`✅ Successfully generated docker-compose file: ${path.relative(projectRoot, outComposeFile)}`);
 
 // --------------------------------------------------------------------------
-// G. Generate deploy-subgraphs.js that uses subgraphDeployments
+// H. Generate deploy-subgraphs.js that uses subgraphDeployments
 // --------------------------------------------------------------------------
 const deployScriptLines = [];
 deployScriptLines.push(`import { spawnSync } from "child_process";\n`);
@@ -264,7 +325,7 @@ deployScriptLines.push(`const subgraphs = ${JSON.stringify(subgraphDeployments, 
 
 deployScriptLines.push(`for (const s of subgraphs) {
   console.log("\\n=== Installing dependencies for: " + s.name + " ===");
-  
+
   // Run npm install first
   const installResult = spawnSync("npm", ["install", "--legacy-peer-deps"], {
     stdio: "inherit",
@@ -276,9 +337,24 @@ deployScriptLines.push(`for (const s of subgraphs) {
     process.exit(installResult.status);
   }
 
+  // Run codegen to generate the types folder
+  console.log("\\n=== Generating types for: " + s.name + " ===");
+
+  const codegenResult = spawnSync("graph", [
+    "codegen",
+    "--output-dir", "src/types/"
+  ], {
+    stdio: "inherit",
+    cwd: s.folder
+  });
+  if (codegenResult.status !== 0) {
+    console.error(\`❌ Failed to run codegen for "\${s.name}"\`);
+    process.exit(codegenResult.status);
+  }
+
   console.log("\\n=== Deploying subgraph: " + s.name + " ===");
 
-  // 1) graph create <subgraph> --node <url>, run from the subgraph folder
+  // 1) graph create <subgraph> --node <url>
   const createResult = spawnSync("graph", [
     "create",
     s.name,
@@ -293,7 +369,7 @@ deployScriptLines.push(`for (const s of subgraphs) {
     process.exit(createResult.status);
   }
 
-  // 2) graph deploy <subgraph> subgraph.yaml --ipfs <ipfs> --node <node>, also from the subgraph folder
+  // 2) graph deploy <subgraph> subgraph.yaml --ipfs <ipfs> --node <node>
   const deployResult = spawnSync("graph", [
     "deploy",
     s.name,
