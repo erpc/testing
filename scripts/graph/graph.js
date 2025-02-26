@@ -18,31 +18,56 @@ const combos = yaml.load(fs.readFileSync(combosFile, "utf8"));
 // A. Prepare base Docker services (ipfs, postgres) that are always present
 // --------------------------------------------------------------------------
 const services = {
-  ipfs: {
-    image: "ipfs/kubo:v0.17.0",
-    container_name: "ipfs",
-    ports: ["5001:5001"],
-    volumes: ["./data/ipfs:/data/ipfs:Z"],
-    restart: "unless-stopped"
-  },
   postgres: {
-    image: "postgres",
-    container_name: "postgres",
+    image: "postgres:14",
     ports: ["5432:5432"],
-    environment: {
-      POSTGRES_USER: "graph-node",
-      POSTGRES_PASSWORD: "let-me-in",
-      POSTGRES_DB: "graph-node"
-    },
     command: [
       "postgres",
       "-cshared_preload_libraries=pg_stat_statements",
       "-cmax_connections=200"
     ],
+    environment: {
+      POSTGRES_USER: "graph-node",
+      POSTGRES_PASSWORD: "let-me-in",
+      POSTGRES_DB: "graph-node",
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+    },
     volumes: [
       "./data/postgres:/var/lib/postgresql/data"
     ],
-    restart: "unless-stopped"
+    logging: {
+      driver: "local",
+      options: {
+        "max-size": "5M",
+        "max-file": "3"
+      }
+    },
+    healthcheck: {
+      test: ["CMD-SHELL", "pg_isready -q -d graph-node -U graph-node"],
+      interval: "1s",
+      timeout: "5s",
+      retries: 10
+    }
+  },
+  ipfs: {
+    image: "ipfs/kubo:v0.14.0",
+    ports: ["5001:5001"],
+    volumes: [
+      "./data/ipfs:/data/ipfs"
+    ],
+    logging: {
+      driver: "local",
+      options: {
+        "max-size": "5M",
+        "max-file": "3"
+      }
+    },
+    healthcheck: {
+      test: ["CMD", "ipfs", "id"],
+      interval: "1s",
+      timeout: "5s",
+      retries: 5
+    }
   }
 };
 
@@ -275,7 +300,7 @@ deployScriptLines.push(`for (const s of subgraphs) {
     "subgraph.yaml",
     "--ipfs", s.ipfs,
     "--node", s.node,
-    "--version-label", "0.0.1",
+    "--version-label", "0.0.1"
   ], {
     stdio: "inherit",
     cwd: s.folder

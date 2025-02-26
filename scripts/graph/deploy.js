@@ -53,7 +53,7 @@ for (const s of subgraphs) {
     "subgraph.yaml",
     "--ipfs", s.ipfs,
     "--node", s.node,
-    "--version-label", "0.0.1",
+    "--version-label", "0.0.1"
   ], {
     stdio: "inherit",
     cwd: s.folder
