@@ -6,18 +6,6 @@ const subgraphs = [
     "node": "http://localhost:8020",
     "ipfs": "http://localhost:5001",
     "folder": "../../blueprints/graph/uniswap-v2"
-  },
-  {
-    "name": "uniswap-v3-latest_no_config_defaults",
-    "node": "http://localhost:8120",
-    "ipfs": "http://localhost:5001",
-    "folder": "../../blueprints/graph/uniswap-v3"
-  },
-  {
-    "name": "uniswap-v4-latest_no_config_defaults",
-    "node": "http://localhost:8220",
-    "ipfs": "http://localhost:5001",
-    "folder": "../../blueprints/graph/uniswap-v4"
   }
 ];
 

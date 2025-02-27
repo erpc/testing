@@ -6,8 +6,8 @@ import path from "path";
 const __filename = fileURLToPath(import.meta.url);
 const scriptRoot = path.dirname(__filename);
 const projectRoot = path.join(scriptRoot);
-
 const combosFile = path.join(scriptRoot, "graph.yaml");
+
 if (!fs.existsSync(combosFile)) {
   throw new Error(`❌ Could not find '${combosFile}'`);
 }
@@ -31,9 +31,7 @@ const services = {
       POSTGRES_DB: "graph-node",
       POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
     },
-    volumes: [
-      "./data/postgres:/var/lib/postgresql/data"
-    ],
+    volumes: ["./data/postgres:/var/lib/postgresql/data"],
     logging: {
       driver: "local",
       options: {
@@ -51,9 +49,7 @@ const services = {
   ipfs: {
     image: "ipfs/kubo:v0.14.0",
     ports: ["5001:5001"],
-    volumes: [
-      "./data/ipfs:/data/ipfs"
-    ],
+    volumes: ["./data/ipfs:/data/ipfs"],
     logging: {
       driver: "local",
       options: {
@@ -102,9 +98,7 @@ for (const combo of combos) {
 
     // Only mount erpc.yaml if it exists
     if (fs.existsSync(erpcConfigPath)) {
-      erpcService.volumes = [
-        `${volumePath}/erpc.yaml:/root/erpc.yaml`
-      ];
+      erpcService.volumes = [`${volumePath}/erpc.yaml:/root/erpc.yaml`];
     }
 
     services[erpcServiceName] = erpcService;
@@ -196,20 +190,19 @@ for (const combo of uniqueGraphCombos) {
   const portOffset = graphIndex * offsetIncrement;
   const adjustedPorts = basePorts.map((p) => `${p + portOffset}:${p}`);
 
-  // 3. Add the Graph Node service
+  // 3. Add the Graph Node service with updated Elasticsearch logging env vars and depends_on conditions
   services[graphNodeServiceName] = {
     image: "graphprotocol/graph-node",
     container_name: graphNodeServiceName,
     ports: adjustedPorts,
-    depends_on: [
-      "ipfs",
-      "postgres",
-      erpcContainerName
-    ],
+    depends_on: {
+      ipfs: { condition: "service_healthy" },
+      postgres: { condition: "service_healthy" },
+      [erpcContainerName]: { condition: "service_started" },
+      elasticsearch: { condition: "service_healthy" }
+    },
     extra_hosts: ["host.docker.internal:host-gateway"],
-    volumes: [
-      "./config:/etc/config"
-    ],
+    volumes: ["./config:/etc/config"],
     environment: {
       postgres_host: "postgres",
       postgres_user: "graph-node",
@@ -217,9 +210,13 @@ for (const combo of uniqueGraphCombos) {
       postgres_db: "graph-node",
       ipfs: "ipfs:5001",
       GRAPH_NODE_CONFIG: `/etc/config/${configFileName}`,
-      GRAPH_LOG: "info"
+      GRAPH_LOG: "info",
+      // Updated Elasticsearch logging env vars:
+      ELASTICSEARCH_URL: "http://elasticsearch:9200",
+      ELASTICSEARCH_USER: "elastic",
+      ELASTICSEARCH_PASSWORD: "changeme"
     },
-    restart: "no"
+    restart: "on-failure"
   };
 
   if (process.platform === "darwin" && process.arch === "arm64") {
@@ -247,16 +244,14 @@ for (const combo of uniqueGraphCombos) {
 }
 
 // --------------------------------------------------------------------------
-// F. Add Prometheus and Grafana exactly as in your snippet
+// F. Add Monitoring and now add Elasticsearch & Kibana services
 // --------------------------------------------------------------------------
 
-// First, figure out which Graph Node services were generated so we can list them under `depends_on`.
-const allGraphNodeKeys = Object.keys(services).filter((k) => k.startsWith("graph-node-"));
-
+// Add the monitoring service (Prometheus/Grafana)
 services.monitoring = {
   build: "./monitoring",
   ports: ["3000:3000", "9090:9090"],
-  depends_on: allGraphNodeKeys,
+  depends_on: Object.keys(services).filter((k) => k.startsWith("graph-node-")),
   volumes: [
     "./monitoring/prometheus:/etc/prometheus",
     "./monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini",
@@ -264,6 +259,56 @@ services.monitoring = {
     "prometheus_data:/prometheus",
     "grafana_data:/var/lib/grafana"
   ]
+};
+
+// Add Elasticsearch service
+services.elasticsearch = {
+  image: "docker.elastic.co/elasticsearch/elasticsearch:8.9.0",
+  environment: {
+    "discovery.type": "single-node",
+    "xpack.security.enabled": "false",
+    ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+  },
+  ports: ["9200:9200"],
+  volumes: ["esdata:/usr/share/elasticsearch/data"],
+  logging: {
+    driver: "local",
+    options: {
+      "max-size": "5M",
+      "max-file": "3"
+    }
+  },
+  healthcheck: {
+    test: [
+      "CMD",
+      "curl",
+      "-f",
+      "http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=50s"
+    ],
+    interval: "10s",
+    timeout: "5s",
+    retries: 10,
+    start_period: "30s"
+  }
+};
+
+// Add Kibana service (as the UI for Elasticsearch)
+services.kibana = {
+  image: "docker.elastic.co/kibana/kibana:8.9.0",
+  ports: ["5601:5601"],
+  depends_on: {
+    elasticsearch: { condition: "service_healthy" }
+  },
+  environment: {
+    ELASTICSEARCH_URL: "http://elasticsearch:9200"
+  },
+  logging: {
+    driver: "local",
+    options: {
+      "max-size": "5M",
+      "max-file": "3"
+    }
+  }
 };
 
 // --------------------------------------------------------------------------
@@ -276,7 +321,23 @@ const prometheusConfig = {
   scrape_configs: []
 };
 
+const allErpcs = Object.keys(services).filter((k) => k.startsWith("erpc-"));
+for (const serviceName of allErpcs) {
+  const matches = serviceName.match(/erpc-(.+)/);
+  if (!matches) continue;
+  
+  const variantName = matches[1];
+  
+  prometheusConfig.scrape_configs.push({
+    job_name: `erpc-${variantName}`,
+    static_configs: [{
+      targets: [`${serviceName}:4001`]
+    }]
+  });
+}
+
 // For each Graph Node service, add a scrape config
+const allGraphNodeKeys = Object.keys(services).filter((k) => k.startsWith("graph-node-"));
 for (const serviceName of allGraphNodeKeys) {
   // Extract the blueprint name from the service name
   // e.g., "graph-node-uniswap-v2-with-erpc-latest_no_config_defaults"
@@ -301,13 +362,14 @@ fs.writeFileSync(prometheusPath, yaml.dump(prometheusConfig), "utf8");
 console.log(`✅ Generated Prometheus config: ${path.relative(projectRoot, prometheusPath)}`);
 
 // --------------------------------------------------------------------------
-// G. Write out docker-compose.graph.yaml (including a named volume for Grafana)
+// G. Write out docker-compose.graph.yaml (including named volumes for Grafana and Elasticsearch)
 // --------------------------------------------------------------------------
 const dockerCompose = {
   services,
   volumes: {
     prometheus_data: {},
-    grafana_data: {}
+    grafana_data: {},
+    esdata: {}
   }
 };
 

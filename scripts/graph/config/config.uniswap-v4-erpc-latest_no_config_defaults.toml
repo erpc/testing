@@ -14,5 +14,5 @@ ingestor = "default"
 [chains.mainnet]
 shard = "primary"
 provider = [
-  { label = "erpc", url = "http://erpc-latest_no_config_defaults:4000/main/evm/1", features = ["archive"] }
+  { label = "erpc", url = "https://eth-mainnet.blastapi.io/5a41b4fd-8f3c-4060-9cdc-521ba39e0a90", features = ["archive"] }
 ]

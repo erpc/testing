@@ -1,5 +1,5 @@
 FROM prom/prometheus:v2.37.0 as prometheus
-FROM grafana/grafana:9.3.2 as grafana
+FROM grafana/grafana:latest as grafana
 
 FROM ubuntu:22.04
 
@@ -16,6 +16,7 @@ COPY --from=grafana /usr/share/grafana /usr/share/grafana
 COPY --from=grafana /etc/grafana /etc/grafana
 COPY grafana/grafana.ini /etc/grafana/grafana.ini
 COPY grafana/datasources/prometheus.yml /etc/grafana/provisioning/datasources/prometheus.yml
+COPY grafana/datasources/postgres.yml /etc/grafana/provisioning/datasources/postgres.yml
 COPY grafana/dashboards/default.yml /etc/grafana/provisioning/dashboards/default.yml
 COPY grafana/dashboards/grafana.json /etc/grafana/provisioning/dashboards/grafana.json
 
