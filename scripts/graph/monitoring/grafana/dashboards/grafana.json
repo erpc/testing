@@ -21,7 +21,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
+  "id": 1,
   "links": [],
   "panels": [
     {
@@ -203,7 +203,7 @@
           "refId": "A"
         }
       ],
-      "title": "RPC Request Duration (Rate)",
+      "title": "RPC Request Duration",
       "type": "timeseries"
     },
     {
@@ -619,6 +619,7 @@
         },
         "showUnfilled": true,
         "sizing": "auto",
+        "text": {},
         "valueMode": "color"
       },
       "pluginVersion": "11.5.2",
@@ -707,7 +708,7 @@
       },
       "gridPos": {
         "h": 12,
-        "w": 8,
+        "w": 12,
         "x": 0,
         "y": 46
       },
@@ -848,8 +849,8 @@
       },
       "gridPos": {
         "h": 12,
-        "w": 8,
-        "x": 8,
+        "w": 12,
+        "x": 12,
         "y": 46
       },
       "id": 208,
@@ -972,9 +973,9 @@
       },
       "gridPos": {
         "h": 12,
-        "w": 8,
-        "x": 16,
-        "y": 46
+        "w": 12,
+        "x": 0,
+        "y": 58
       },
       "id": 228,
       "options": {
@@ -1072,8 +1073,8 @@
       },
       "gridPos": {
         "h": 12,
-        "w": 8,
-        "x": 0,
+        "w": 12,
+        "x": 12,
         "y": 58
       },
       "id": 212,
@@ -1214,9 +1215,9 @@
       },
       "gridPos": {
         "h": 12,
-        "w": 16,
-        "x": 8,
-        "y": 58
+        "w": 24,
+        "x": 0,
+        "y": 70
       },
       "id": 214,
       "options": {
@@ -1317,9 +1318,9 @@
       },
       "gridPos": {
         "h": 12,
-        "w": 8,
+        "w": 12,
         "x": 0,
-        "y": 70
+        "y": 82
       },
       "id": 204,
       "options": {
@@ -1418,9 +1419,9 @@
       },
       "gridPos": {
         "h": 12,
-        "w": 8,
-        "x": 8,
-        "y": 70
+        "w": 12,
+        "x": 12,
+        "y": 82
       },
       "id": 229,
       "options": {
@@ -1518,9 +1519,9 @@
       },
       "gridPos": {
         "h": 12,
-        "w": 8,
-        "x": 16,
-        "y": 70
+        "w": 12,
+        "x": 0,
+        "y": 94
       },
       "id": 226,
       "options": {
@@ -1553,106 +1554,6 @@
         }
       ],
       "title": "Scores",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "description": "Total requests that are sent to upstream but is rate-limited by the provider node",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 8,
-        "x": 0,
-        "y": 82
-      },
-      "id": 211,
-      "options": {
-        "alertThreshold": true,
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum(increase(erpc_upstream_request_remote_rate_limited_total[30s])) by (instance, project, network, upstream)",
-          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{upstream}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Upstream-level Remote rate-limited Requests",
       "type": "timeseries"
     },
     {
@@ -1719,9 +1620,9 @@
       },
       "gridPos": {
         "h": 12,
-        "w": 8,
-        "x": 8,
-        "y": 82
+        "w": 12,
+        "x": 12,
+        "y": 94
       },
       "id": 210,
       "options": {
@@ -1753,6 +1654,106 @@
         }
       ],
       "title": "Upstream-level self-imposed Ratel-limited requests",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Total requests that are sent to upstream but is rate-limited by the provider node",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 0,
+        "y": 106
+      },
+      "id": 211,
+      "options": {
+        "alertThreshold": true,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "sum(increase(erpc_upstream_request_remote_rate_limited_total[30s])) by (instance, project, network, upstream)",
+          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{upstream}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Upstream-level Remote rate-limited Requests",
       "type": "timeseries"
     },
     {
@@ -1819,9 +1820,9 @@
       },
       "gridPos": {
         "h": 12,
-        "w": 8,
-        "x": 16,
-        "y": 82
+        "w": 12,
+        "x": 12,
+        "y": 106
       },
       "id": 230,
       "options": {
@@ -1920,7 +1921,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 94
+        "y": 118
       },
       "id": 227,
       "options": {
@@ -2042,7 +2043,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 94
+        "y": 118
       },
       "id": 207,
       "options": {
@@ -2163,7 +2164,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 106
+        "y": 130
       },
       "id": 215,
       "options": {
@@ -2263,7 +2264,7 @@
         "h": 18,
         "w": 24,
         "x": 0,
-        "y": 118
+        "y": 142
       },
       "id": 224,
       "options": {
@@ -2362,7 +2363,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 136
+        "y": 160
       },
       "id": 217,
       "options": {
@@ -2460,7 +2461,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 136
+        "y": 160
       },
       "id": 236,
       "options": {
@@ -2558,7 +2559,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 146
+        "y": 170
       },
       "id": 238,
       "options": {
@@ -2656,7 +2657,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 146
+        "y": 170
       },
       "id": 242,
       "options": {
@@ -2754,7 +2755,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 156
+        "y": 180
       },
       "id": 240,
       "options": {
@@ -2853,7 +2854,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 156
+        "y": 180
       },
       "id": 216,
       "options": {
@@ -2964,7 +2965,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 166
+        "y": 190
       },
       "id": 237,
       "options": {
@@ -3075,7 +3076,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 166
+        "y": 190
       },
       "id": 239,
       "options": {
@@ -3186,7 +3187,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 176
+        "y": 200
       },
       "id": 243,
       "options": {
@@ -3297,7 +3298,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 176
+        "y": 200
       },
       "id": 241,
       "options": {
@@ -3387,6 +3388,6 @@
   "timezone": "browser",
   "title": "Graph Node Prometheus Metrics Copy",
   "uid": "beebhbyrvuhoge",
-  "version": 11,
+  "version": 1,
   "weekStart": ""
 }

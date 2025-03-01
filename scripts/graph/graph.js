@@ -302,6 +302,16 @@ services.kibana = {
   environment: {
     ELASTICSEARCH_URL: "http://elasticsearch:9200"
   },
+  volumes: ["./monitoring/kibana/kibana.json:/usr/share/kibana/data/kibana/dashboards/grafana.json"],
+  command: [
+    "sh", "-c", `
+      /usr/share/kibana/bin/kibana &
+      sleep 30;
+      curl -X POST http://localhost:5601/api/saved_objects/_import?overwrite=true \
+           -H 'kbn-xsrf: true' \
+           --form file=@/usr/share/kibana/config/kibana-saved-objects.json;
+      wait`
+  ],
   logging: {
     driver: "local",
     options: {

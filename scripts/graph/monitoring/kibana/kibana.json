@@ -1,0 +1,14 @@
+{
+    "objects": [
+      {
+        "id": "logs-data-view",
+        "type": "index-pattern",
+        "attributes": {
+          "title": "block-ingestor-logs,graphql-server-logs,index-node-server-logs,subgraph",
+          "timeFieldName": "@timestamp"
+        }
+      }
+    ],
+    "version": "8.9.0"
+  }
+  
