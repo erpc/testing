@@ -6,3 +6,5 @@
 
 # Ignore the docker-compose.yaml file in the scripts directory
 scripts/docker-compose.yaml
+
+visualization/data/

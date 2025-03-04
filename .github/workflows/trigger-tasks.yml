@@ -10,7 +10,7 @@ on:
       blueprint_regexp:
         description: 'Regex pattern to match blueprints (e.g. ".*" or "k6/.*")'
         required: true
-        default: '.*'
+        default: 'k6/.*'
       versions:
         description: 'Comma-separated list of eRPC versions to test (e.g., ["latest","0.0.35","main"])'
         required: false
@@ -49,7 +49,7 @@ jobs:
         variant: ${{ fromJson(needs.discover-matrix.outputs.variants) }}
         blueprint: ${{ fromJson(needs.discover-matrix.outputs.blueprints) }}
         job-index: [0]
-      fail-fast: false
+      fail-fast: true
       max-parallel: 5
 
     steps:
@@ -108,18 +108,18 @@ jobs:
           compose-file: variants/${{ matrix.variant }}/docker-compose.yml
           up-flags: "-d"
 
-      - name: Wait for eRPC
+      - name: Wait for eRPC main service
         run: |
-          MAX_RETRIES=5
+          MAX_RETRIES=10
           URL="http://localhost:${ERPC_HTTP_PORT}"
-          echo "Waiting for eRPC to be ready... ($i/$MAX_RETRIES) on $URL"
-          for i in {1..$MAX_RETRIES}; do
+          echo "Waiting for eRPC to be ready... (0/$MAX_RETRIES) on $URL"
+          for i in $(seq 1 $MAX_RETRIES); do
             if curl -sf $URL >/dev/null; then
               echo "eRPC is ready on $URL"
               exit 0
             fi
             echo "Waiting for eRPC to be ready... ($i/$MAX_RETRIES) on $URL"
-            sleep 2
+            sleep 3
           done
           echo "eRPC failed to become ready on $URL"
           exit 1
@@ -129,7 +129,8 @@ jobs:
           # Attempt to capture heap profile with retry logic
           MAX_RETRIES=3
           for i in $(seq 1 $MAX_RETRIES); do
-            if curl -sf "http://localhost:${{ env.ERPC_PPROF_PORT }}/debug/pprof/heap" \
+            echo "Attempt $i to capture heap profile from http://localhost:${{ env.ERPC_PPROF_PORT }}/debug/pprof/heap"
+            if curl -v "http://localhost:${{ env.ERPC_PPROF_PORT }}/debug/pprof/heap" \
                -o "${RESULTS_DIR}/pprof/heap-before.pprof"; then
               echo "Successfully captured initial heap profile"
               break
@@ -151,18 +152,6 @@ jobs:
             "blueprints/${{ matrix.blueprint }}/run.js"
         env:
           ERPC_BASE_URL: "http://localhost:${{ env.ERPC_HTTP_PORT }}/main/evm/"
-          # Pass all required secrets to k6
-          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
-          # TENDERLY_ACCESS_KEY: ${{ secrets.TENDERLY_ACCESS_KEY }}
-          # DWELLIR_API_KEY: ${{ secrets.DWELLIR_API_KEY }}
-          BLAST_API_KEY: ${{ secrets.BLAST_API_KEY }}
-          # CHAINSTACK_ARB_KEY: ${{ secrets.CHAINSTACK_ARB_KEY }}
-          # CHAINSTACK_ETH_KEY: ${{ secrets.CHAINSTACK_ETH_KEY }}
-          # CHAINSTACK_BASE_KEY: ${{ secrets.CHAINSTACK_BASE_KEY }}
-          # QUICKNODE_ARB_ENDPOINT: ${{ secrets.QUICKNODE_ARB_ENDPOINT }}
-          # QUICKNODE_ETH_ENDPOINT: ${{ secrets.QUICKNODE_ETH_ENDPOINT }}
-          # QUICKNODE_BASE_ENDPOINT: ${{ secrets.QUICKNODE_BASE_ENDPOINT }}
-          # ONFINALITY_API_KEY: ${{ secrets.ONFINALITY_API_KEY }}
 
       - name: Capture final pprof heap profile
         if: always()
@@ -170,7 +159,8 @@ jobs:
           # Attempt to capture heap profile with retry logic
           MAX_RETRIES=3
           for i in $(seq 1 $MAX_RETRIES); do
-            if curl -sf "http://localhost:${{ env.ERPC_PPROF_PORT }}/debug/pprof/heap" \
+            echo "Attempt $i to capture heap profile from http://localhost:${{ env.ERPC_PPROF_PORT }}/debug/pprof/heap"
+            if curl -v "http://localhost:${{ env.ERPC_PPROF_PORT }}/debug/pprof/heap" \
                -o "${RESULTS_DIR}/pprof/heap-after.pprof"; then
               echo "Successfully captured final heap profile"
               break
@@ -199,10 +189,3 @@ jobs:
           retention-days: 30
           compression-level: 6
           overwrite: true
-
-      - name: Teardown
-        if: always()
-        run: |
-          cd variants/${{ matrix.variant }}
-          export COMPOSE_PROJECT_NAME=variant-${{ strategy.job-index }}
-          docker compose down -v --remove-orphans

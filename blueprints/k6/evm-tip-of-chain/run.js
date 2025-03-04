@@ -85,35 +85,6 @@ function getRandomChain() {
   return chains[randomIntBetween(0, chains.length - 1)];
 }
 
-async function getLatestBlock(http, params, chain) {
-  const now = Date.now() / 1000;
-  if (chain.cached.latestBlock && (now - chain.cached.latestBlockTimestamp) < CONFIG.LATEST_BLOCK_CACHE_TTL) {
-    return chain.cached.latestBlock;
-  }
-
-  const payload = JSON.stringify({
-    jsonrpc: "2.0",
-    method: "eth_getBlockByNumber",
-    params: ["latest", false],
-    id: Math.floor(Math.random() * 100000000)
-  });
-
-  const res = await http.post(ERPC_BASE_URL + chain.id, payload, params);
-  if (res.status === 200) {
-    try {
-      const body = JSON.parse(res.body);
-      if (body.result) {
-        chain.cached.latestBlock = body.result;
-        chain.cached.latestBlockTimestamp = now;
-        return body.result;
-      }
-    } catch (e) {
-      console.error(`Failed to parse latest block response: ${e}`);
-    }
-  }
-  return null;
-}
-
 async function latestBlockWithLogs(http, params, chain) {
   const latestBlock = await getLatestBlock(http, params, chain);
   if (!latestBlock) return null;
@@ -145,7 +116,6 @@ function randomAccountBalances(http, params, chain) {
   return http.post(ERPC_BASE_URL + chain.id, payload, params);
 }
 
-// Update getLatestBlock to cache transaction hashes
 async function getLatestBlock(http, params, chain) {
   const now = Date.now() / 1000;
   if (chain.cached.latestBlock && (now - chain.cached.latestBlockTimestamp) < CONFIG.LATEST_BLOCK_CACHE_TTL) {
@@ -179,7 +149,6 @@ async function getLatestBlock(http, params, chain) {
   return null;
 }
 
-// New function to get a random cached transaction
 function getRandomCachedTransaction(chain) {
   if (!chain.cached.transactions || chain.cached.transactions.length === 0) {
     return null;
@@ -187,7 +156,6 @@ function getRandomCachedTransaction(chain) {
   return chain.cached.transactions[randomIntBetween(0, chain.cached.transactions.length - 1)];
 }
 
-// New function to trace latest block transactions
 async function traceLatestTransaction(http, params, chain) {
   const txHash = getRandomCachedTransaction(chain);
   if (!txHash) {

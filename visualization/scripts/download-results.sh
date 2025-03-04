@@ -6,7 +6,7 @@ mkdir -p data/k6-results
 
 # Download artifacts from GitHub Actions
 # You'll need to provide your GitHub token and relevant workflow details
-gh run download --repo your-repo-name --name "k6-results-*"
+gh run download --repo erpc/testing --name "k6-results-*"
 
 # Process each JSON file and convert to Prometheus format
 for variant_dir in data/k6-results/*/; do
