@@ -50,7 +50,7 @@ jobs:
         blueprint: ${{ fromJson(needs.discover-matrix.outputs.blueprints) }}
         job-index: [0]
       fail-fast: true
-      max-parallel: 5
+      max-parallel: 4
 
     steps:
       - name: Checkout
