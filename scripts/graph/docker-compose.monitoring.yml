@@ -1,0 +1,37 @@
+services:
+  monitoring:
+    build: ./monitoring
+    container_name: monitoring
+    ports:
+      - "3000:3000"  # Grafana
+      - "9090:9090"  # Prometheus
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - ./monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards
+      - prometheus_data:/prometheus
+      - grafana_data:/var/lib/grafana
+    networks:
+      - monitoring
+
+  # kibana:
+  #   image: docker.elastic.co/kibana/kibana:8.9.0
+  #   container_name: logging
+  #   environment:
+  #     ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
+  #   ports:
+  #     - "5601:5601"
+  #   depends_on:
+  #     - elasticsearch
+  #   volumes:
+  #     - ./monitoring/kibana:/usr/share/kibana/config
+  #   networks:
+  #     - monitoring
+
+volumes:
+  prometheus_data: {}
+  grafana_data: {}
+
+networks:
+  monitoring:
+    name: monitoring_net

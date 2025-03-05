@@ -1,468 +1,412 @@
-import { fileURLToPath } from "url";
-import fs from "fs";
-import yaml from "js-yaml";
-import path from "path";
+#!/usr/bin/env node
 
-const __filename = fileURLToPath(import.meta.url);
-const scriptRoot = path.dirname(__filename);
-const projectRoot = path.join(scriptRoot);
-const combosFile = path.join(scriptRoot, "graph.yaml");
+import fs from 'fs';
+import path from 'path';
+import yaml from 'js-yaml';
+import { spawnSync } from 'child_process';
 
-if (!fs.existsSync(combosFile)) {
-  throw new Error(`❌ Could not find '${combosFile}'`);
-}
-const combos = yaml.load(fs.readFileSync(combosFile, "utf8"));
-
-// --------------------------------------------------------------------------
-// A. Prepare base Docker services (ipfs, postgres) that are always present
-// --------------------------------------------------------------------------
-const services = {
-  postgres: {
-    image: "postgres:14",
-    ports: ["5432:5432"],
-    command: [
-      "postgres",
-      "-cshared_preload_libraries=pg_stat_statements",
-      "-cmax_connections=200"
-    ],
-    environment: {
-      POSTGRES_USER: "graph-node",
-      POSTGRES_PASSWORD: "let-me-in",
-      POSTGRES_DB: "graph-node",
-      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
-    },
-    volumes: ["./data/postgres:/var/lib/postgresql/data"],
-    logging: {
-      driver: "local",
-      options: {
-        "max-size": "5M",
-        "max-file": "3"
-      }
-    },
-    healthcheck: {
-      test: ["CMD-SHELL", "pg_isready -q -d graph-node -U graph-node"],
-      interval: "1s",
-      timeout: "5s",
-      retries: 10
-    }
-  },
-  ipfs: {
-    image: "ipfs/kubo:v0.14.0",
-    ports: ["5001:5001"],
-    volumes: ["./data/ipfs:/data/ipfs"],
-    logging: {
-      driver: "local",
-      options: {
-        "max-size": "5M",
-        "max-file": "3"
-      }
-    },
-    healthcheck: {
-      test: ["CMD", "ipfs", "id"],
-      interval: "1s",
-      timeout: "5s",
-      retries: 5
-    }
+// 1) Load graph.yaml combos
+let combos;
+try {
+  const raw = fs.readFileSync('graph.yaml', 'utf8');
+  combos = yaml.load(raw);
+  if (!Array.isArray(combos)) {
+    throw new Error('graph.yaml is not an array of blueprint–variant combos!');
   }
-};
+} catch (err) {
+  console.error('❌ Could not parse graph.yaml:', err.message);
+  process.exit(1);
+}
 
-// --------------------------------------------------------------------------
-// B. Dynamically create eRPC services for each unique variant in combos
-// --------------------------------------------------------------------------
-const processedVariants = new Set();
+// 2) Paths for Prometheus, Postgres DS, Grafana
+const prometheusFile = './monitoring/prometheus/prometheus.yml';
+const postgresFile   = './monitoring/grafana/datasources/postgres.yml';
+const grafanaFile    = './monitoring/grafana/dashboards/grafana.json';
+
+// 3) Data structures (for “generate” portion)
+const prometheusScrape = [];
+const postgresDatasets = [];
+const newPanels = [];
+
+// 4) Docker Compose base
+const blueprintsBase = '../../blueprints';
+const variantsBase   = '../../variants';
+let envOffset = 0;
+
+// -----------------------------------------------------------------------------
+// Helper: tear down an existing environment for a given combo
+// -----------------------------------------------------------------------------
+function runDockerComposeDown(projectName, blueprintPath, variantPath) {
+  const composeArgs = [
+    '-p', projectName,
+    '-f', path.join(blueprintsBase, blueprintPath, 'docker-compose.yml'),
+    '-f', path.join(variantsBase,   variantPath,   'docker-compose.yml'),
+    'down',
+    '-v',            // remove named volumes declared by the Compose file
+    '--rmi', 'all',  // remove images used by services
+    '--remove-orphans'
+  ];
+  const result = spawnSync('docker-compose', composeArgs, { stdio: 'inherit' });
+  if (result.status !== 0) {
+    console.warn(`⚠️  Could not fully remove environment for ${projectName} — continuing.`);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Helper: bring environment up for a given combo
+// -----------------------------------------------------------------------------
+function runDockerComposeUp(projectName, blueprintPath, variantPath, env) {
+  const finalEnv = { ...process.env, ...env };
+  const composeArgs = [
+    '-p', projectName,
+    '-f', path.join(blueprintsBase, blueprintPath, 'docker-compose.yml'),
+    '-f', path.join(variantsBase,   variantPath,   'docker-compose.yml'),
+    'up', '-d'
+  ];
+  const result = spawnSync('docker-compose', composeArgs, {
+    stdio: 'inherit',
+    env: finalEnv
+  });
+  if (result.status !== 0) {
+    throw new Error(`docker-compose up failed for ${projectName}`);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 5) GENERATE environment for each combo
+// -----------------------------------------------------------------------------
 for (const combo of combos) {
-  const variantStr = combo.variant;
-  if (!variantStr) {
-    // skip combos with no variant
+  const { blueprint, variant } = combo;
+  if (!blueprint || !variant) {
+    console.warn('Skipping combo missing blueprint or variant:', combo);
     continue;
   }
-  if (!processedVariants.has(variantStr)) {
-    processedVariants.add(variantStr);
 
-    // e.g. "latest/no-config-defaults" => version="latest", configType="no-config-defaults"
-    const [version, configType] = variantStr.split("/");
-    // Container name => "erpc-latest_no_config_defaults"
-    const safeVariant = variantStr.replace(/\//g, "-").replace(/-/g, "_");
-    const erpcServiceName = `erpc-${safeVariant}`;
+  // Safe project name
+  const blueprintName = path.basename(blueprint);
+  const safeVariant   = variant.replace(/\//g, '-');
+  const projectName   = `${blueprintName}-${safeVariant}`;
 
-    // We'll look for erpc.yaml in ../variants/<version>/<configType>/erpc.yaml
-    const volumePath = path.join("..", "variants", version, configType);
-    const erpcConfigPath = path.join(volumePath, "erpc.yaml");
-
-    const erpcService = {
-      image: `ghcr.io/erpc/erpc:${version}`,
-      container_name: erpcServiceName,
-      expose: ["4000:4000", "4001:4001"],
-      restart: "always"
-    };
-
-    // Only mount erpc.yaml if it exists
-    if (fs.existsSync(erpcConfigPath)) {
-      erpcService.volumes = [`${volumePath}/erpc.yaml:/root/erpc.yaml`];
-    }
-
-    services[erpcServiceName] = erpcService;
-    console.log(`🚀 Added eRPC service '${erpcServiceName}' for variant '${variantStr}'`);
-  }
-}
-
-// --------------------------------------------------------------------------
-// C. Filter combos to only create Graph Node services for "graph/" blueprint combos
-// --------------------------------------------------------------------------
-const uniqueGraphCombos = [];
-const seenGraphKey = new Set();
-for (const combo of combos) {
-  const { variant, blueprint } = combo;
-  if (!variant || !blueprint) {
-    console.warn(`Skipping combo with missing variant/blueprint: ${JSON.stringify(combo)}`);
-    continue;
-  }
-  // Only handle combos whose blueprint starts with "graph/"
-  if (!blueprint.startsWith("graph/")) {
-    continue;
-  }
-  const key = `${variant}::${blueprint}`;
-  if (!seenGraphKey.has(key)) {
-    seenGraphKey.add(key);
-    uniqueGraphCombos.push(combo);
-  }
-}
-
-// --------------------------------------------------------------------------
-// D. Minimal config.toml for each Graph Node combo
-// --------------------------------------------------------------------------
-function buildConfigToml(erpcContainerName) {
-  const content = `\
-[store]
-[store.primary]
-connection = "postgresql://graph-node:let-me-in@postgres:5432/graph-node"
-pool_size = 10
-
-[deployment]
-[[deployment.rule]]
-store = "primary"
-indexers = ["default"]
-
-[chains]
-ingestor = "default"
-
-[chains.mainnet]
-shard = "primary"
-provider = [
-  { label = "erpc", url = "http://__ERPC_CONTAINER__:4000/main/evm/1", features = ["archive"] }
-]
-`;
-  return content.replace("__ERPC_CONTAINER__", erpcContainerName);
-}
-
-// We'll collect subgraph deployments to create the deploy-subgraphs.js
-const subgraphDeployments = [];
-
-// --------------------------------------------------------------------------
-// E. Create one Graph Node service per unique (variant, blueprint), with port offsets
-// --------------------------------------------------------------------------
-const basePorts = [8000, 8001, 8020, 8030, 8040];
-const offsetIncrement = 100;
-let graphIndex = 0;
-
-for (const combo of uniqueGraphCombos) {
-  const { variant, blueprint } = combo;
-  // blueprint might be "graph/uniswap-v2" => we only use the part after "graph/"
-  const [bpType, bpName] = blueprint.split("/");
-
-  // Rebuild the same safe variant name used above
-  const safeVariant = variant.replace(/\//g, "-").replace(/-/g, "_");
-  const erpcContainerName = `erpc-${safeVariant}`;
-
-  // We'll name the Graph Node config file and container
-  const configFileName = `config.${bpName}-${erpcContainerName}.toml`;
-  const graphNodeServiceName = `graph-node-${bpName}-with-${erpcContainerName}`;
-
-  // 1. Build & write the config
-  const configToml = buildConfigToml(erpcContainerName);
-  const configDir = path.join(projectRoot, "config");
-  fs.mkdirSync(configDir, { recursive: true });
-  const outPath = path.join(configDir, configFileName);
-  fs.writeFileSync(outPath, configToml, "utf8");
-  console.log(`📝 Wrote Graph Node config: ${path.relative(projectRoot, outPath)}`);
-
-  // 2. Calculate port offset for this container
-  const portOffset = graphIndex * offsetIncrement;
-  const adjustedPorts = basePorts.map((p) => `${p + portOffset}:${p}`);
-
-  // 3. Add the Graph Node service with updated Elasticsearch logging env vars and depends_on conditions
-  services[graphNodeServiceName] = {
-    image: "graphprotocol/graph-node",
-    container_name: graphNodeServiceName,
-    ports: adjustedPorts,
-    depends_on: {
-      ipfs: { condition: "service_healthy" },
-      postgres: { condition: "service_healthy" },
-      [erpcContainerName]: { condition: "service_started" },
-      elasticsearch: { condition: "service_healthy" }
-    },
-    extra_hosts: ["host.docker.internal:host-gateway"],
-    volumes: ["./config:/etc/config"],
-    environment: {
-      postgres_host: "postgres",
-      postgres_user: "graph-node",
-      postgres_pass: "let-me-in",
-      postgres_db: "graph-node",
-      ipfs: "ipfs:5001",
-      GRAPH_NODE_CONFIG: `/etc/config/${configFileName}`,
-      GRAPH_LOG: "info",
-      // Updated Elasticsearch logging env vars:
-      ELASTICSEARCH_URL: "http://elasticsearch:9200",
-      ELASTICSEARCH_USER: "elastic",
-      ELASTICSEARCH_PASSWORD: "changeme"
-    },
-    restart: "on-failure"
+  // Docker environment ports
+  const envVars = {
+    NETWORK_NAME: `${projectName}_net`,
+    POSTGRES_PORT: 5432 + envOffset,
+    IPFS_PORT: 5001 + envOffset,
+    GRAPH_NODE_PORT1: 8000 + envOffset,
+    GRAPH_NODE_PORT2: 8001 + envOffset,
+    GRAPH_NODE_PORT3: 8020 + envOffset,
+    GRAPH_NODE_PORT4: 8030 + envOffset,
+    GRAPH_NODE_PORT5: 8040 + envOffset,
+    ELASTICSEARCH_PORT: 9200 + envOffset,
+    ERPC_HTTP_PORT: 4000 + envOffset,
+    ERPC_METRICS_PORT: 4001 + envOffset
   };
+  envOffset += 100;
 
-  if (process.platform === "darwin" && process.arch === "arm64") {
-    services[graphNodeServiceName].platform = "linux/amd64";
+  // 5a) Cleanup old environment for this combo
+  console.log(`\n--- Cleaning up old environment for ${projectName} ---`);
+  runDockerComposeDown(projectName, blueprint, variant);
+
+  // 5b) Spin up fresh Docker containers
+  console.log(`\n=== Starting ${projectName} with offset ${envOffset-100} ===`);
+  try {
+    runDockerComposeUp(projectName, blueprint, variant, envVars);
+  } catch (e) {
+    console.error(`❌ ${e.message}`);
+    process.exit(1);
   }
 
-  // 4. Determine the indexing API host port (8020 in container)
-  const indexingApiContainerPort = 8020; // basePorts[2]
-  const containerPortIndex = basePorts.indexOf(indexingApiContainerPort);
-  if (containerPortIndex < 0) {
-    throw new Error("Could not find 8020 in basePorts!");
-  }
-  const indexingApiHostPort = indexingApiContainerPort + portOffset;
-
-  // 5. Track subgraph info for the deploy-subgraphs.js
-  const subgraphFolder = path.join("..", "..", "blueprints", bpType, bpName);
-  subgraphDeployments.push({
-    name: `${bpName}-${safeVariant}`,
-    node: `http://localhost:${indexingApiHostPort}`,
-    ipfs: "http://localhost:5001",
-    folder: subgraphFolder
+  // 5c) Prepare Prometheus scrape config
+  prometheusScrape.push({
+    erpcJob:  `erpc-${projectName}`,
+    erpcPort: envVars.ERPC_METRICS_PORT,
+    graphJob: `graph-node-${projectName}`,
+    graphPort: envVars.GRAPH_NODE_PORT5
   });
 
-  graphIndex++;
+  // 5d) Postgres DS info
+  const dsName = `Postgres-${projectName}`;
+  const dsPort = envVars.POSTGRES_PORT;
+  postgresDatasets.push({ dsName, dsPort });
+
+  // 5e) Build new table panels for Grafana
+  const deploymentSQL = `
+SELECT
+  d.deployment,
+  i.name,
+  d.failed,
+  d.latest_ethereum_block_number,
+  d.entity_count,
+  d.reorg_count,
+  d.current_reorg_depth,
+  d.max_reorg_depth,
+  d.health,
+  d.synced_at
+FROM subgraphs.subgraph_deployment d
+JOIN info.subgraph_info i ON i.subgraph = d.deployment
+ORDER BY d.deployment DESC
+LIMIT 100;
+`.trim();
+
+  const errorsSQL = `
+SELECT
+  e.subgraph_id,
+  i.name,
+  e.message,
+  e.block_range,
+  e.deterministic,
+  e.created_at
+FROM subgraphs.subgraph_error e
+JOIN info.subgraph_info i ON i.subgraph = e.subgraph_id
+ORDER BY e.created_at DESC
+LIMIT 100;
+`.trim();
+
+  // We'll just create 2 panels per combo
+  const nextPanelId    = newPanels.length * 2 + 1;
+  const nextPanelIdErr = nextPanelId + 1;
+
+  newPanels.push({
+    id: nextPanelId,
+    type: 'table',
+    title: `Deployments (${projectName})`,
+    gridPos: { h: 5, w: 24, x: 0, y: 0 },
+    datasource: {
+      type: 'grafana-postgresql-datasource',
+      uid: dsName
+    },
+    targets: [
+      {
+        refId: 'A',
+        format: 'table',
+        rawQuery: true,
+        rawSql: deploymentSQL
+      }
+    ]
+  });
+
+  newPanels.push({
+    id: nextPanelIdErr,
+    type: 'table',
+    title: `Errors (${projectName})`,
+    gridPos: { h: 7, w: 24, x: 0, y: 0 },
+    datasource: {
+      type: 'grafana-postgresql-datasource',
+      uid: dsName
+    },
+    targets: [
+      {
+        refId: 'A',
+        format: 'table',
+        rawQuery: true,
+        rawSql: errorsSQL
+      }
+    ]
+  });
 }
 
-// --------------------------------------------------------------------------
-// F. Add Monitoring and now add Elasticsearch & Kibana services
-// --------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// 6) Write Prometheus config
+// -----------------------------------------------------------------------------
+{
+  let content = `global:
+  scrape_interval: 15s
 
-// Add the monitoring service (Prometheus/Grafana)
-services.monitoring = {
-  build: "./monitoring",
-  ports: ["3000:3000", "9090:9090"],
-  depends_on: Object.keys(services).filter((k) => k.startsWith("graph-node-")),
-  volumes: [
-    "./monitoring/prometheus:/etc/prometheus",
-    "./monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini",
-    "./monitoring/grafana/dashboards:/etc/grafana/dashboards",
-    "prometheus_data:/prometheus",
-    "grafana_data:/var/lib/grafana"
-  ]
-};
+scrape_configs:
+`;
+  for (const c of prometheusScrape) {
+    content += `
+  - job_name: ${c.erpcJob}
+    static_configs:
+      - targets: ['host.docker.internal:${c.erpcPort}']
 
-// Add Elasticsearch service
-services.elasticsearch = {
-  image: "docker.elastic.co/elasticsearch/elasticsearch:8.9.0",
-  environment: {
-    "discovery.type": "single-node",
-    "xpack.security.enabled": "false",
-    ES_JAVA_OPTS: "-Xms512m -Xmx512m"
-  },
-  ports: ["9200:9200"],
-  volumes: ["esdata:/usr/share/elasticsearch/data"],
-  logging: {
-    driver: "local",
-    options: {
-      "max-size": "5M",
-      "max-file": "3"
+  - job_name: ${c.graphJob}
+    static_configs:
+      - targets: ['host.docker.internal:${c.graphPort}']
+`;
+  }
+
+  fs.writeFileSync(prometheusFile, content.trim() + '\n', 'utf8');
+  console.log(`\n✅ Wrote fresh ${prometheusFile}`);
+}
+
+// -----------------------------------------------------------------------------
+// 7) Write Postgres datasources
+// -----------------------------------------------------------------------------
+{
+  let content = `apiVersion: 1
+datasources:
+`;
+  for (const ds of postgresDatasets) {
+    content += `
+  - name: ${ds.dsName}
+    type: postgres
+    url: host.docker.internal:${ds.dsPort}
+    uid: ${ds.dsName}
+    user: graph-node
+    secureJsonData:
+      password: let-me-in
+    jsonData:
+      database: graph-node
+      sslmode: 'disable'
+      maxOpenConns: 100
+      maxIdleConns: 100
+      maxIdleConnsAuto: true
+      connMaxLifetime: 14400
+      postgresVersion: 903
+      timescaledb: false
+`;
+  }
+
+  fs.writeFileSync(postgresFile, content.trim() + '\n', 'utf8');
+  console.log(`✅ Wrote fresh ${postgresFile}`);
+}
+
+// -----------------------------------------------------------------------------
+// 8) Append new panels to Grafana JSON
+// -----------------------------------------------------------------------------
+{
+  let baseDashboard;
+  if (fs.existsSync(grafanaFile)) {
+    baseDashboard = JSON.parse(fs.readFileSync(grafanaFile, 'utf8'));
+    console.log(`ℹ️  Loaded existing ${grafanaFile}`);
+  } else {
+    baseDashboard = {
+      title: "Auto-Generated Dashboard",
+      schemaVersion: 40,
+      version: 1,
+      panels: []
+    };
+    console.log(`ℹ️  Creating new minimal dashboard skeleton`);
+  }
+
+  for (const p of newPanels) {
+    const alreadyExists = baseDashboard.panels.find(
+      (panel) => panel.title === p.title
+    );
+    if (alreadyExists) {
+      console.log(`⚠️  Skipping panel "${p.title}" (already exists)`);
+      continue;
     }
-  },
-  healthcheck: {
-    test: [
-      "CMD",
-      "curl",
-      "-f",
-      "http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=50s"
-    ],
-    interval: "10s",
-    timeout: "5s",
-    retries: 10,
-    start_period: "30s"
+    baseDashboard.panels.push(p);
   }
-};
 
-// Add Kibana service (as the UI for Elasticsearch)
-services.kibana = {
-  image: "docker.elastic.co/kibana/kibana:8.9.0",
-  ports: ["5601:5601"],
-  depends_on: {
-    elasticsearch: { condition: "service_healthy" }
-  },
-  environment: {
-    ELASTICSEARCH_URL: "http://elasticsearch:9200"
-  },
-  volumes: ["./monitoring/kibana/kibana.json:/usr/share/kibana/data/kibana/dashboards/grafana.json"],
-  command: [
-    "sh", "-c", `
-      /usr/share/kibana/bin/kibana &
-      sleep 30;
-      curl -X POST http://localhost:5601/api/saved_objects/_import?overwrite=true \
-           -H 'kbn-xsrf: true' \
-           --form file=@/usr/share/kibana/config/kibana-saved-objects.json;
-      wait`
-  ],
-  logging: {
-    driver: "local",
-    options: {
-      "max-size": "5M",
-      "max-file": "3"
-    }
-  }
-};
-
-// --------------------------------------------------------------------------
-// F.1 Generate prometheus.yml configuration
-// --------------------------------------------------------------------------
-const prometheusConfig = {
-  global: {
-    scrape_interval: "15s"
-  },
-  scrape_configs: []
-};
-
-const allErpcs = Object.keys(services).filter((k) => k.startsWith("erpc-"));
-for (const serviceName of allErpcs) {
-  const matches = serviceName.match(/erpc-(.+)/);
-  if (!matches) continue;
-  
-  const variantName = matches[1];
-  
-  prometheusConfig.scrape_configs.push({
-    job_name: `erpc-${variantName}`,
-    static_configs: [{
-      targets: [`${serviceName}:4001`]
-    }]
-  });
+  fs.writeFileSync(grafanaFile, JSON.stringify(baseDashboard, null, 2), 'utf8');
+  console.log(`✅ Updated ${grafanaFile} with Postgres panels (no duplicates)`);
 }
 
-// For each Graph Node service, add a scrape config
-const allGraphNodeKeys = Object.keys(services).filter((k) => k.startsWith("graph-node-"));
-for (const serviceName of allGraphNodeKeys) {
-  // Extract the blueprint name from the service name
-  // e.g., "graph-node-uniswap-v2-with-erpc-latest_no_config_defaults"
-  const matches = serviceName.match(/graph-node-(.+)-with-/);
-  if (!matches) continue;
-  
-  const blueprintName = matches[1];
-  
-  prometheusConfig.scrape_configs.push({
-    job_name: `graph-node-${blueprintName}`,
-    static_configs: [{
-      targets: [`${serviceName}:8040`]
-    }]
-  });
+// -----------------------------------------------------------------------------
+// 9) Clean up + Bring up monitoring stack
+// -----------------------------------------------------------------------------
+{
+  console.log("\n--- Stopping old monitoring stack ---");
+  spawnSync(
+    'docker',
+    ['compose', '-f', 'docker-compose.monitoring.yml', 'down', '-v', '--rmi', 'all', '--remove-orphans'],
+    { stdio: 'inherit' }
+  );
+  console.log("✅ Old monitoring stack removed.");
+
+  console.log("\n=== Starting fresh monitoring stack ===");
+  const monitoringResult = spawnSync(
+    'docker',
+    ['compose', '-f', 'docker-compose.monitoring.yml', 'up', '-d'],
+    { stdio: 'inherit' }
+  );
+  if (monitoringResult.status !== 0) {
+    console.error("❌ Failed to start monitoring stack with docker-compose.monitoring.yml");
+    process.exit(monitoringResult.status);
+  }
+  console.log("✅ Monitoring stack is running.");
 }
 
-// Create monitoring directory and write prometheus.yml
-const monitoringDir = path.join(projectRoot, "monitoring", "prometheus");
-fs.mkdirSync(monitoringDir, { recursive: true });
-const prometheusPath = path.join(monitoringDir, "prometheus.yml");
-fs.writeFileSync(prometheusPath, yaml.dump(prometheusConfig), "utf8");
-console.log(`✅ Generated Prometheus config: ${path.relative(projectRoot, prometheusPath)}`);
+// -----------------------------------------------------------------------------
+// 10) Deploy subgraphs
+// -----------------------------------------------------------------------------
+let subgraphOffset = 0;
 
-// --------------------------------------------------------------------------
-// G. Write out docker-compose.graph.yaml (including named volumes for Grafana and Elasticsearch)
-// --------------------------------------------------------------------------
-const dockerCompose = {
-  services,
-  volumes: {
-    prometheus_data: {},
-    grafana_data: {},
-    esdata: {}
+for (let i = 0; i < combos.length; i++) {
+  const { blueprint, variant } = combos[i];
+  if (!blueprint || !variant) {
+    console.warn(`Skipping subgraph entry #${i}: missing blueprint or variant`);
+    continue;
   }
-};
 
-const outComposeFile = path.join(projectRoot, "docker-compose.graph.yaml");
-fs.writeFileSync(outComposeFile, yaml.dump(dockerCompose), "utf8");
-console.log(`✅ Successfully generated docker-compose file: ${path.relative(projectRoot, outComposeFile)}`);
+  // Convert variant e.g. 'latest/no-config-defaults' -> 'latest_no_config_defaults'
+  const safeVariant = variant.replace(/\//g, '_');
+  const blueprintBase = path.basename(blueprint);
+  const subgraphName = `${blueprintBase}-${safeVariant}`;
 
-// --------------------------------------------------------------------------
-// H. Generate deploy-subgraphs.js that uses subgraphDeployments
-// --------------------------------------------------------------------------
-const deployScriptLines = [];
-deployScriptLines.push(`import { spawnSync } from "child_process";\n`);
+  // Use the same offset approach for the subgraph node
+  const nodeUrlPort = 8020 + subgraphOffset;
+  const ipfsPort    = 5001 + subgraphOffset;
+  const nodeUrl = `http://localhost:${nodeUrlPort}`;
+  const ipfsUrl = `http://localhost:${ipfsPort}`;
 
-deployScriptLines.push(`const subgraphs = ${JSON.stringify(subgraphDeployments, null, 2)};\n`);
+  // Path to blueprint folder
+  const subgraphFolder = path.resolve('../../blueprints', blueprint);
 
-deployScriptLines.push(`for (const s of subgraphs) {
-  console.log("\\n=== Installing dependencies for: " + s.name + " ===");
+  console.log(`\n=== Deploying Subgraph: ${subgraphName} (node=${nodeUrl}) ===`);
 
-  // Run npm install first
-  const installResult = spawnSync("npm", ["install", "--legacy-peer-deps"], {
-    stdio: "inherit",
-    cwd: s.folder
+  if (!fs.existsSync(subgraphFolder)) {
+    console.error(`❌ Subgraph folder not found: ${subgraphFolder}`);
+    continue;
+  }
+
+  // (a) npm install
+  console.log(`Installing dependencies in ${subgraphFolder}...`);
+  const installResult = spawnSync('npm', ['install', '--legacy-peer-deps'], {
+    stdio: 'inherit',
+    cwd: subgraphFolder
   });
-
   if (installResult.status !== 0) {
-    console.error(\`❌ Failed to install dependencies for "\${s.name}"\`);
+    console.error(`❌ Failed npm install for "${subgraphName}"`);
     process.exit(installResult.status);
   }
 
-  // Run codegen to generate the types folder
-  console.log("\\n=== Generating types for: " + s.name + " ===");
-
-  const codegenResult = spawnSync("graph", [
-    "codegen",
-    "--output-dir", "src/types/"
-  ], {
-    stdio: "inherit",
-    cwd: s.folder
+  // (b) graph codegen
+  console.log(`\nGenerating types for ${subgraphName}...`);
+  const codegenResult = spawnSync('graph', ['codegen', '--output-dir', 'src/types/'], {
+    stdio: 'inherit',
+    cwd: subgraphFolder
   });
   if (codegenResult.status !== 0) {
-    console.error(\`❌ Failed to run codegen for "\${s.name}"\`);
+    console.error(`❌ Failed codegen for "${subgraphName}"`);
     process.exit(codegenResult.status);
   }
 
-  console.log("\\n=== Deploying subgraph: " + s.name + " ===");
-
-  // 1) graph create <subgraph> --node <url>
-  const createResult = spawnSync("graph", [
-    "create",
-    s.name,
-    "--node", s.node
-  ], {
-    stdio: "inherit",
-    cwd: s.folder
+  // (c) graph create
+  console.log(`\nCreating subgraph on node: ${nodeUrl}`);
+  const createResult = spawnSync('graph', ['create', subgraphName, '--node', nodeUrl], {
+    stdio: 'inherit',
+    cwd: subgraphFolder
   });
-
   if (createResult.status !== 0) {
-    console.error(\`❌ Failed to create subgraph "\${s.name}"\`);
+    console.error(`❌ Failed to create subgraph "${subgraphName}"`);
     process.exit(createResult.status);
   }
 
-  // 2) graph deploy <subgraph> subgraph.yaml --ipfs <ipfs> --node <node>
-  const deployResult = spawnSync("graph", [
-    "deploy",
-    s.name,
-    "subgraph.yaml",
-    "--ipfs", s.ipfs,
-    "--node", s.node,
-    "--version-label", "0.0.1"
+  // (d) graph deploy
+  console.log(`\nDeploying "${subgraphName}" to ${nodeUrl}...`);
+  const deployResult = spawnSync('graph', [
+    'deploy',
+    subgraphName,
+    'subgraph.yaml',
+    '--ipfs', ipfsUrl,
+    '--node', nodeUrl,
+    '--version-label', '0.0.1'
   ], {
-    stdio: "inherit",
-    cwd: s.folder
+    stdio: 'inherit',
+    cwd: subgraphFolder
   });
-
   if (deployResult.status !== 0) {
-    console.error(\`❌ Failed to deploy subgraph "\${s.name}"\`);
+    console.error(`❌ Failed to deploy subgraph "${subgraphName}"`);
     process.exit(deployResult.status);
   }
 
-  console.log(\`✅ Successfully deployed subgraph: \${s.name}\`);
+  console.log(`✅ Successfully deployed: ${subgraphName}`);
+  subgraphOffset += 100;
 }
-`);
 
-const deployScriptPath = path.join(projectRoot, "deploy.js");
-fs.writeFileSync(deployScriptPath, deployScriptLines.join("\n"), "utf8");
-console.log(`✅ Wrote deploy-subgraphs.js: ${path.relative(projectRoot, deployScriptPath)}`);
+// All done
+console.log('\n✅ Environment generated + all subgraphs deployed!');

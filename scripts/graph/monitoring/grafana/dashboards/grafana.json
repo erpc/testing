@@ -21,22 +21,8 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 1,
   "links": [],
   "panels": [
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 9,
-      "panels": [],
-      "title": "Graph Nodes",
-      "type": "row"
-    },
     {
       "datasource": {
         "type": "prometheus",
@@ -66,7 +52,7 @@
         "h": 3,
         "w": 24,
         "x": 0,
-        "y": 1
+        "y": 0
       },
       "id": 10,
       "options": {
@@ -108,7 +94,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$DS_PROM"
+        "uid": "PBFA97CFB590B2093"
       },
       "fieldConfig": {
         "defaults": {
@@ -170,7 +156,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 4
+        "y": 3
       },
       "id": 11,
       "options": {
@@ -180,7 +166,6 @@
           "placement": "bottom",
           "showLegend": true
         },
-        "showLines": true,
         "tooltip": {
           "hideZeros": false,
           "mode": "single",
@@ -207,326 +192,12 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "left",
-            "cellOptions": {
-              "type": "json-view"
-            },
-            "filterable": true,
-            "inspect": true
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "latest_ethereum_block_number"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 272
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "deployment"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 185
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "current_reorg_depth"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 245
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "max_reorg_depth"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 187
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "name"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 341
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 24,
-        "x": 0,
-        "y": 13
-      },
-      "id": 12,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": []
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P44368ADAD746BC27"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "hide": false,
-          "rawQuery": true,
-          "rawSql": "SELECT \n  d.deployment,\n  i.name,\n  d.failed,\n  d.latest_ethereum_block_number,\n  d.entity_count,\n  d.reorg_count,\n  d.current_reorg_depth,\n  d.max_reorg_depth,\n  d.health,\n  d.synced_at\nFROM subgraphs.subgraph_deployment d\nJOIN info.subgraph_info i \n  ON i.subgraph = d.deployment\nORDER BY d.id DESC\nLIMIT 100;\n",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        }
-      ],
-      "title": "Deployments",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "left",
-            "cellOptions": {
-              "type": "json-view"
-            },
-            "filterable": true,
-            "inspect": true
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "latest_ethereum_block_number"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 272
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "deployment"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 379
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "current_reorg_depth"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 245
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "max_reorg_depth"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 187
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "message"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 574
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "subgraph_id"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 392
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 24,
-        "x": 0,
-        "y": 18
-      },
-      "id": 13,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": []
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P44368ADAD746BC27"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "hide": false,
-          "rawQuery": true,
-          "rawSql": "SELECT \n  e.subgraph_id,\n  i.name,\n  e.message,\n  e.block_range,\n  e.deterministic,\n  e.created_at\nFROM subgraphs.subgraph_error e\nJOIN info.subgraph_info i ON i.subgraph = e.subgraph_id\nORDER BY e.id DESC\nLIMIT 100000;\n",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        }
-      ],
-      "title": "Errors",
-      "type": "table"
-    },
-    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 12
       },
       "id": 235,
       "panels": [],
@@ -540,10 +211,6 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "fieldMinMax": false,
           "mappings": [
             {
               "options": {
@@ -594,7 +261,7 @@
         "h": 20,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 13
       },
       "id": 222,
       "options": {
@@ -606,9 +273,9 @@
           "showLegend": false
         },
         "maxVizHeight": 300,
-        "minVizHeight": 9,
+        "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "left",
+        "namePlacement": "auto",
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
@@ -619,7 +286,6 @@
         },
         "showUnfilled": true,
         "sizing": "auto",
-        "text": {},
         "valueMode": "color"
       },
       "pluginVersion": "11.5.2",
@@ -630,13 +296,8 @@
             "uid": "PAE45454D0EDB9216"
           },
           "editorMode": "code",
-          "exemplar": false,
-          "expr": "histogram_quantile(0.95, sum(rate(erpc_upstream_request_duration_seconds_bucket{network!=\"n/a\"}[30s])) by (le, instance, network, upstream)) > 0",
-          "format": "time_series",
-          "instant": false,
-          "interval": "",
-          "legendFormat": "{{instance}} / {{upstream}} / {{network}}",
-          "range": true,
+          "expr": "histogram_quantile(0.95, sum(rate(erpc_upstream_request_duration_seconds_bucket{network!=\"n/a\"}[30s])) by (le, job, network, upstream)) > 0",
+          "legendFormat": "{{job}} / {{upstream}} / {{network}}",
           "refId": "A"
         }
       ],
@@ -710,11 +371,10 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 46
+        "y": 33
       },
       "id": 202,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -735,9 +395,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(erpc_network_request_received_total[30s])) by (instance, project, network, category)",
-          "interval": "",
-          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{category}}",
+          "expr": "sum(increase(erpc_network_request_received_total[30s])) by (job, project, network, category)",
+          "legendFormat": "{{job}}, {{project}}, {{network}}, {{category}}",
           "range": true,
           "refId": "A"
         }
@@ -804,58 +463,16 @@
           },
           "unit": "s"
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byValue",
-              "options": {
-                "op": "gte",
-                "reducer": "allIsZero",
-                "value": 0
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": true,
-                  "tooltip": true,
-                  "viz": false
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byValue",
-              "options": {
-                "op": "gte",
-                "reducer": "allIsNull",
-                "value": 0
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": true,
-                  "tooltip": true,
-                  "viz": false
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 46
+        "y": 33
       },
       "id": 208,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -876,9 +493,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.5, sum(rate(erpc_network_request_duration_seconds_bucket[30s])) by (le, instance, project, network, category))",
-          "hide": false,
-          "legendFormat": "p50: {{instance}}, {{project}}, {{network}}, {{category}}",
+          "expr": "histogram_quantile(0.5, sum(rate(erpc_network_request_duration_seconds_bucket[30s])) by (le, job, project, network, category))",
+          "legendFormat": "p50: {{job}}, {{project}}, {{network}}, {{category}}",
           "range": true,
           "refId": "C"
         },
@@ -888,8 +504,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(erpc_network_request_duration_seconds_bucket[30s])) by (le, instance, project, network, category))",
-          "legendFormat": "p95: {{instance}}, {{project}}, {{network}}, {{category}}",
+          "expr": "histogram_quantile(0.95, sum(rate(erpc_network_request_duration_seconds_bucket[30s])) by (le, job, project, network, category))",
+          "legendFormat": "p95: {{job}}, {{project}}, {{network}}, {{category}}",
           "range": true,
           "refId": "A"
         },
@@ -899,9 +515,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(erpc_network_request_duration_seconds_bucket[5m])) by (le, instance, project, network, category))",
-          "hide": false,
-          "legendFormat": "p99: {{instance}}, {{project}}, {{network}}, {{category}}",
+          "expr": "histogram_quantile(0.99, sum(rate(erpc_network_request_duration_seconds_bucket[5m])) by (le, job, project, network, category))",
+          "legendFormat": "p99: {{job}}, {{project}}, {{network}}, {{category}}",
           "range": true,
           "refId": "B"
         }
@@ -914,7 +529,6 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Total requests received by eRPC for a specific network and method",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -975,11 +589,10 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 58
+        "y": 45
       },
       "id": 228,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -1000,9 +613,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(erpc_network_request_received_total[30s])) by (instance, project, network, category)",
-          "interval": "",
-          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{category}}",
+          "expr": "sum(rate(erpc_network_request_received_total[30s])) by (job, project, network, category)",
+          "legendFormat": "{{job}}, {{project}}, {{network}}, {{category}}",
           "range": true,
           "refId": "A"
         }
@@ -1075,11 +687,10 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 58
+        "y": 45
       },
       "id": 212,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -1100,9 +711,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(erpc_network_request_self_rate_limited_total[30s])) by (instance, project, network, category)",
-          "interval": "",
-          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{category}}",
+          "expr": "sum(rate(erpc_network_request_self_rate_limited_total[30s])) by (job, project, network, category)",
+          "legendFormat": "{{job}}, {{project}}, {{network}}, {{category}}",
           "range": true,
           "refId": "A"
         }
@@ -1130,7 +740,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1144,7 +754,7 @@
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "never",
+            "showPoints": "auto",
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1170,58 +780,16 @@
           },
           "unit": "short"
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byValue",
-              "options": {
-                "op": "gte",
-                "reducer": "allIsZero",
-                "value": 0
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": true,
-                  "tooltip": true,
-                  "viz": false
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byValue",
-              "options": {
-                "op": "gte",
-                "reducer": "allIsNull",
-                "value": 0
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": true,
-                  "tooltip": true,
-                  "viz": false
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 70
+        "y": 57
       },
       "id": 214,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "table",
@@ -1242,11 +810,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "exemplar": false,
-          "expr": "sum(increase(erpc_network_failed_request_total[30s])) by (instance,project,network,error) > 0",
-          "instant": false,
-          "interval": "",
-          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{error}}",
+          "expr": "sum(increase(erpc_network_failed_request_total[30s])) by (job,project,network,error) > 0",
+          "legendFormat": "{{job}}, {{project}}, {{network}}, {{error}}",
           "range": true,
           "refId": "A"
         }
@@ -1320,11 +885,10 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 82
+        "y": 69
       },
       "id": 204,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -1345,9 +909,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(erpc_upstream_request_total[30s])) by (instance, project, network, upstream, attempt)",
-          "interval": "",
-          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{upstream}}, {{attempt}}",
+          "expr": "sum(increase(erpc_upstream_request_total[30s])) by (job, project, network, upstream, attempt)",
+          "legendFormat": "{{job}}, {{project}}, {{network}}, {{upstream}}, {{attempt}}",
           "range": true,
           "refId": "A"
         }
@@ -1421,11 +984,10 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 82
+        "y": 69
       },
       "id": 229,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -1446,9 +1008,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(erpc_upstream_request_total[30s])) by (instance, project, network, upstream, attempt)",
-          "interval": "",
-          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{upstream}}, {{attempt}}",
+          "expr": "sum(rate(erpc_upstream_request_total[30s])) by (job, project, network, upstream, attempt)",
+          "legendFormat": "{{job}}, {{project}}, {{network}}, {{upstream}}, {{attempt}}",
           "range": true,
           "refId": "A"
         }
@@ -1461,7 +1022,6 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1521,11 +1081,10 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 94
+        "y": 81
       },
       "id": 226,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -1546,9 +1105,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "avg(erpc_upstream_score_overall{network=\"*\"}) by (instance, project, upstream, network)",
-          "format": "time_series",
-          "legendFormat": "{{instance}}, {{project}}, {{upstream}}",
+          "expr": "avg(erpc_upstream_score_overall{network=\"*\"}) by (job, project, upstream, network)",
+          "legendFormat": "{{job}}, {{project}}, {{upstream}}",
           "range": true,
           "refId": "A"
         }
@@ -1561,7 +1119,6 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Total requests rate-limited locally on eRPC before actually sending, based on defined budget",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1613,8 +1170,7 @@
                 "value": 80
               }
             ]
-          },
-          "unit": "short"
+          }
         },
         "overrides": []
       },
@@ -1622,11 +1178,10 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 94
+        "y": 81
       },
       "id": 210,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -1647,8 +1202,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(erpc_upstream_request_self_rate_limited_total[30s])) by (instance, project, network, upstream)",
-          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{upstream}}",
+          "expr": "sum(increase(erpc_upstream_request_self_rate_limited_total[30s])) by (job, project, network, upstream)",
+          "legendFormat": "{{job}}, {{project}}, {{network}}, {{upstream}}",
           "range": true,
           "refId": "A"
         }
@@ -1661,7 +1216,6 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Total requests that are sent to upstream but is rate-limited by the provider node",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1713,8 +1267,7 @@
                 "value": 80
               }
             ]
-          },
-          "unit": "short"
+          }
         },
         "overrides": []
       },
@@ -1722,11 +1275,10 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 106
+        "y": 93
       },
       "id": 211,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -1747,8 +1299,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(erpc_upstream_request_remote_rate_limited_total[30s])) by (instance, project, network, upstream)",
-          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{upstream}}",
+          "expr": "sum(increase(erpc_upstream_request_remote_rate_limited_total[30s])) by (job, project, network, upstream)",
+          "legendFormat": "{{job}}, {{project}}, {{network}}, {{upstream}}",
           "range": true,
           "refId": "A"
         }
@@ -1761,7 +1313,6 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Dynamically tuned value for maxCount of different rate limit budgets",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1813,8 +1364,7 @@
                 "value": 80
               }
             ]
-          },
-          "unit": "short"
+          }
         },
         "overrides": []
       },
@@ -1822,11 +1372,10 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 106
+        "y": 93
       },
       "id": 230,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -1847,7 +1396,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (budget, method) (erpc_rate_limiter_budget_max_count)\n",
+          "expr": "sum by (budget, method) (erpc_rate_limiter_budget_max_count)",
           "legendFormat": "{{budget}}, {{method}}",
           "range": true,
           "refId": "A"
@@ -1861,7 +1410,6 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1921,11 +1469,10 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 118
+        "y": 105
       },
       "id": 227,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -1946,8 +1493,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(erpc_upstream_request_duration_seconds_bucket[30s])) by (le, instance, project, upstream))",
-          "legendFormat": "p50: {{instance}}, {{project}}, {{upstream}}",
+          "expr": "histogram_quantile(0.50, sum(rate(erpc_upstream_request_duration_seconds_bucket[30s])) by (le, job, project, upstream))",
+          "legendFormat": "p50: {{job}}, {{project}}, {{upstream}}",
           "range": true,
           "refId": "A"
         },
@@ -1957,8 +1504,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(erpc_upstream_request_duration_seconds_bucket[30s])) by (le, instance, project, upstream))",
-          "legendFormat": "p95: {{instance}}, {{project}}, {{upstream}}",
+          "expr": "histogram_quantile(0.95, sum(rate(erpc_upstream_request_duration_seconds_bucket[30s])) by (le, job, project, upstream))",
+          "legendFormat": "p95: {{job}}, {{project}}, {{upstream}}",
           "range": true,
           "refId": "B"
         },
@@ -1968,8 +1515,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(erpc_upstream_request_duration_seconds_bucket[1m])) by (le, instance, project, upstream))",
-          "legendFormat": "p99: {{instance}}, {{project}}, {{upstream}}",
+          "expr": "histogram_quantile(0.99, sum(rate(erpc_upstream_request_duration_seconds_bucket[1m])) by (le, job, project, upstream))",
+          "legendFormat": "p99: {{job}}, {{project}}, {{upstream}}",
           "range": true,
           "refId": "C"
         }
@@ -1982,7 +1529,6 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2034,8 +1580,7 @@
                 "value": 80
               }
             ]
-          },
-          "unit": "s"
+          }
         },
         "overrides": []
       },
@@ -2043,11 +1588,10 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 118
+        "y": 105
       },
       "id": 207,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -2104,7 +1648,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "The failures are more tolerable (e.g. rate limited, hedge-cancellations, etc) which doesn't mean upstream is failing, therefore less alert-worthy",
+      "description": "Failures from upstream endpoints (rate-limit, etc.)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2164,11 +1708,10 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 130
+        "y": 117
       },
       "id": 215,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -2189,8 +1732,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(erpc_upstream_request_errors_total{severity=\"warning\"}[30s])) by (instance, project, network, upstream, error) > 0",
-          "interval": "",
+          "expr": "sum(increase(erpc_upstream_request_errors_total{severity=\"warning\"}[30s])) by (job, project, network, upstream, error) > 0",
           "legendFormat": "{{project}}, {{network}}, {{upstream}}, {{error}}",
           "range": true,
           "refId": "A"
@@ -2204,7 +1746,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Failures received when attempting upstream endpoints, these errors mean upstream has failures",
+      "description": "Critical errors from upstream endpoints",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2264,11 +1806,10 @@
         "h": 18,
         "w": 24,
         "x": 0,
-        "y": 142
+        "y": 129
       },
       "id": 224,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -2289,9 +1830,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(erpc_upstream_request_errors_total{severity=\"critical\"}[30s])) by (instance, project, network, upstream, error) > 0",
-          "interval": "",
-          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{upstream}}, {{error}}",
+          "expr": "sum(increase(erpc_upstream_request_errors_total{severity=\"critical\"}[30s])) by (job, project, network, upstream, error) > 0",
+          "legendFormat": "{{job}}, {{project}}, {{network}}, {{upstream}}, {{error}}",
           "range": true,
           "refId": "A"
         }
@@ -2363,11 +1903,10 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 160
+        "y": 147
       },
       "id": 217,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -2388,8 +1927,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(erpc_cache_set_success_total[30s])) by (instance, project, network, category, connector, policy, ttl)",
-          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
+          "expr": "sum(increase(erpc_cache_set_success_total[30s])) by (job, project, network, category, connector, policy, ttl)",
+          "legendFormat": "{{job}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
           "range": true,
           "refId": "A"
         }
@@ -2461,11 +2000,10 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 160
+        "y": 147
       },
       "id": 236,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -2486,8 +2024,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(erpc_cache_set_error_total[30s])) by (instance, project, network, category, connector, policy, ttl)",
-          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
+          "expr": "sum(increase(erpc_cache_set_error_total[30s])) by (job, project, network, category, connector, policy, ttl)",
+          "legendFormat": "{{job}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
           "range": true,
           "refId": "A"
         }
@@ -2559,11 +2097,10 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 170
+        "y": 157
       },
       "id": 238,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -2584,8 +2121,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(erpc_cache_get_success_hit_total[30s])) by (instance, project, network, category, connector, policy, ttl)",
-          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
+          "expr": "sum(increase(erpc_cache_get_success_hit_total[30s])) by (job, project, network, category, connector, policy, ttl)",
+          "legendFormat": "{{job}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
           "range": true,
           "refId": "A"
         }
@@ -2657,11 +2194,10 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 170
+        "y": 157
       },
       "id": 242,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -2682,8 +2218,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(erpc_cache_get_success_miss_total[30s])) by (instance, project, network, category, connector, policy, ttl)",
-          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
+          "expr": "sum(increase(erpc_cache_get_success_miss_total[30s])) by (job, project, network, category, connector, policy, ttl)",
+          "legendFormat": "{{job}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
           "range": true,
           "refId": "A"
         }
@@ -2755,11 +2291,10 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 180
+        "y": 167
       },
       "id": 240,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -2780,8 +2315,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(erpc_cache_get_error_total[30s])) by (instance, project, network, category, connector, policy, ttl)",
-          "legendFormat": "{{instance}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
+          "expr": "sum(increase(erpc_cache_get_error_total[30s])) by (job, project, network, category, connector, policy, ttl)",
+          "legendFormat": "{{job}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
           "range": true,
           "refId": "A"
         }
@@ -2845,8 +2380,7 @@
                 "value": 80
               }
             ]
-          },
-          "unit": "s"
+          }
         },
         "overrides": []
       },
@@ -2854,455 +2388,10 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 180
-      },
-      "id": 216,
-      "options": {
-        "alertThreshold": true,
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.5, sum(rate(erpc_cache_set_success_duration_seconds_bucket[30s])) by (le, instance, project, network, category, connector, policy, ttl))",
-          "legendFormat": "p50 - {{instance}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(erpc_cache_set_success_duration_seconds_bucket[30s])) by (le, instance, project, network, category, connector, policy, ttl))",
-          "hide": false,
-          "legendFormat": "p95 - {{instance}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
-          "range": true,
-          "refId": "B"
-        }
-      ],
-      "title": "Cache SET success duration",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 0,
-        "y": 190
-      },
-      "id": 237,
-      "options": {
-        "alertThreshold": true,
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.5, sum(rate(erpc_cache_set_error_duration_seconds_bucket[30s])) by (le, instance, project, network, category, connector, policy, ttl))",
-          "legendFormat": "p50 - {{instance}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(erpc_cache_set_error_duration_seconds_bucket[30s])) by (le, instance, project, network, category, connector, policy, ttl))",
-          "hide": false,
-          "legendFormat": "p95 - {{instance}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
-          "range": true,
-          "refId": "B"
-        }
-      ],
-      "title": "Cache SET error duration",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 12,
-        "y": 190
-      },
-      "id": 239,
-      "options": {
-        "alertThreshold": true,
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.5, sum(rate(erpc_cache_get_success_hit_duration_seconds_bucket[30s])) by (le, instance, project, network, category, connector, policy, ttl))",
-          "legendFormat": "p50 - {{instance}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(erpc_cache_get_success_hit_duration_seconds_bucket[30s])) by (le, instance, project, network, category, connector, policy, ttl))",
-          "hide": false,
-          "legendFormat": "p95 - {{instance}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
-          "range": true,
-          "refId": "B"
-        }
-      ],
-      "title": "Cache GET success-hit duration",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 0,
-        "y": 200
-      },
-      "id": 243,
-      "options": {
-        "alertThreshold": true,
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.5, sum(rate(erpc_cache_get_success_miss_duration_seconds_bucket[30s])) by (le, instance, project, network, category, connector, policy, ttl))",
-          "legendFormat": "p50 - {{instance}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(erpc_cache_get_success_miss_duration_seconds_bucket[30s])) by (le, instance, project, network, category, connector, policy, ttl))",
-          "hide": false,
-          "legendFormat": "p95 - {{instance}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
-          "range": true,
-          "refId": "B"
-        }
-      ],
-      "title": "Cache GET success-miss duration",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 12,
-        "y": 200
+        "y": 167
       },
       "id": 241,
       "options": {
-        "alertThreshold": true,
         "legend": {
           "calcs": [],
           "displayMode": "list",
@@ -3323,8 +2412,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.5, sum(rate(erpc_cache_get_error_duration_seconds_bucket[30s])) by (le, instance, project, network, category, connector, policy, ttl))",
-          "legendFormat": "p50 - {{instance}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
+          "expr": "histogram_quantile(0.5, sum(rate(erpc_cache_get_error_duration_seconds_bucket[30s])) by (le, job, project, network, category, connector, policy, ttl))",
+          "legendFormat": "p50 - {{job}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
           "range": true,
           "refId": "A"
         },
@@ -3334,15 +2423,152 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(erpc_cache_get_error_duration_seconds_bucket[30s])) by (le, instance, project, network, category, connector, policy, ttl))",
-          "hide": false,
-          "legendFormat": "p95 - {{instance}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
+          "expr": "histogram_quantile(0.95, sum(rate(erpc_cache_get_error_duration_seconds_bucket[30s])) by (le, job, project, network, category, connector, policy, ttl))",
+          "legendFormat": "p95 - {{job}}, {{project}}, {{network}}, {{category}}, {{connector}}, {{policy}}, TTL={{ttl}}",
           "range": true,
           "refId": "B"
         }
       ],
       "title": "Cache GET error duration",
       "type": "timeseries"
+    },
+    {
+      "id": 1,
+      "type": "table",
+      "title": "Deployments (uniswap-v2-latest-no-config-defaults)",
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "Postgres-uniswap-v2-latest-no-config-defaults"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  d.deployment,\n  i.name,\n  d.failed,\n  d.latest_ethereum_block_number,\n  d.entity_count,\n  d.reorg_count,\n  d.current_reorg_depth,\n  d.max_reorg_depth,\n  d.health,\n  d.synced_at\nFROM subgraphs.subgraph_deployment d\nJOIN info.subgraph_info i ON i.subgraph = d.deployment\nORDER BY d.deployment DESC\nLIMIT 100;"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "Errors (uniswap-v2-latest-no-config-defaults)",
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "Postgres-uniswap-v2-latest-no-config-defaults"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  e.subgraph_id,\n  i.name,\n  e.message,\n  e.block_range,\n  e.deterministic,\n  e.created_at\nFROM subgraphs.subgraph_error e\nJOIN info.subgraph_info i ON i.subgraph = e.subgraph_id\nORDER BY e.created_at DESC\nLIMIT 100;"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Deployments (uniswap-v3-latest-no-config-defaults)",
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "Postgres-uniswap-v3-latest-no-config-defaults"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  d.deployment,\n  i.name,\n  d.failed,\n  d.latest_ethereum_block_number,\n  d.entity_count,\n  d.reorg_count,\n  d.current_reorg_depth,\n  d.max_reorg_depth,\n  d.health,\n  d.synced_at\nFROM subgraphs.subgraph_deployment d\nJOIN info.subgraph_info i ON i.subgraph = d.deployment\nORDER BY d.deployment DESC\nLIMIT 100;"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Errors (uniswap-v3-latest-no-config-defaults)",
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "Postgres-uniswap-v3-latest-no-config-defaults"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  e.subgraph_id,\n  i.name,\n  e.message,\n  e.block_range,\n  e.deterministic,\n  e.created_at\nFROM subgraphs.subgraph_error e\nJOIN info.subgraph_info i ON i.subgraph = e.subgraph_id\nORDER BY e.created_at DESC\nLIMIT 100;"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "table",
+      "title": "Deployments (uniswap-v4-latest-no-config-defaults)",
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "Postgres-uniswap-v4-latest-no-config-defaults"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  d.deployment,\n  i.name,\n  d.failed,\n  d.latest_ethereum_block_number,\n  d.entity_count,\n  d.reorg_count,\n  d.current_reorg_depth,\n  d.max_reorg_depth,\n  d.health,\n  d.synced_at\nFROM subgraphs.subgraph_deployment d\nJOIN info.subgraph_info i ON i.subgraph = d.deployment\nORDER BY d.deployment DESC\nLIMIT 100;"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "table",
+      "title": "Errors (uniswap-v4-latest-no-config-defaults)",
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "Postgres-uniswap-v4-latest-no-config-defaults"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  e.subgraph_id,\n  i.name,\n  e.message,\n  e.block_range,\n  e.deterministic,\n  e.created_at\nFROM subgraphs.subgraph_error e\nJOIN info.subgraph_info i ON i.subgraph = e.subgraph_id\nORDER BY e.created_at DESC\nLIMIT 100;"
+        }
+      ]
     }
   ],
   "preload": false,
@@ -3386,7 +2612,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Graph Node Prometheus Metrics Copy",
+  "title": "Graph Node Prometheus Metrics (Only Prom Panels)",
   "uid": "beebhbyrvuhoge",
   "version": 1,
   "weekStart": ""

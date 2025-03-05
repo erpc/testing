@@ -14,17 +14,5 @@ ingestor = "default"
 [chains.mainnet]
 shard = "primary"
 provider = [
-  { label = "erpc", url = "http://erpc-latest-only-network-level-failsafe:4000/main/evm/1", features = ["archive"] }
-]
-
-[chains.arbitrum-one]
-shard = "primary"
-provider = [
-  { label = "erpc", url = "http://erpc-latest-only-network-level-failsafe:4000/main/evm/42161", features = ["archive"] }
-]
-
-[chains.base]
-shard = "primary"
-provider = [
-  { label = "erpc", url = "http://erpc-latest-only-network-level-failsafe:4000/main/evm/8453", features = ["archive"] }
+  { label = "erpc", url = "http://erpc:4000/main/evm/1", features = ["archive"] }
 ]

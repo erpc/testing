@@ -10,7 +10,7 @@ services:
     volumes:
       - ./erpc.yaml:/root/erpc.yaml
     networks:
-      - erpc
+      default: {}
     environment:
       LOG_LEVEL: "${LOG_LEVEL}"
       ALCHEMY_API_KEY: "${ALCHEMY_API_KEY}"
@@ -26,5 +26,6 @@ services:
       # ONFINALITY_API_KEY: "${ONFINALITY_API_KEY}"
 
 networks:
-  erpc:
-    driver: bridge
+  default:
+    name: ${NETWORK_NAME}
+    external: true
