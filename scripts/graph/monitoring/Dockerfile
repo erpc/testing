@@ -17,6 +17,7 @@ COPY --from=grafana /etc/grafana /etc/grafana
 COPY grafana/grafana.ini /etc/grafana/grafana.ini
 COPY grafana/datasources/prometheus.yml /etc/grafana/provisioning/datasources/prometheus.yml
 COPY grafana/datasources/postgres.yml /etc/grafana/provisioning/datasources/postgres.yml
+COPY grafana/datasources/loki.yml /etc/grafana/provisioning/datasources/loki.yml
 COPY grafana/dashboards/default.yml /etc/grafana/provisioning/dashboards/default.yml
 COPY grafana/dashboards/grafana.json /etc/grafana/provisioning/dashboards/grafana.json
 

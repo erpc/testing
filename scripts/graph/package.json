@@ -4,7 +4,8 @@
   "description": "Graph + eRPC integration testing",
   "type": "module",
   "scripts": {
-    "start": "npm i && node graph.js"
+    "start": "npm i && node graph.js",
+    "clean": "docker system prune -af --volumes"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

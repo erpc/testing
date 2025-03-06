@@ -14,24 +14,38 @@ services:
     networks:
       - monitoring
 
-  # kibana:
-  #   image: docker.elastic.co/kibana/kibana:8.9.0
-  #   container_name: logging
-  #   environment:
-  #     ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
-  #   ports:
-  #     - "5601:5601"
-  #   depends_on:
-  #     - elasticsearch
-  #   volumes:
-  #     - ./monitoring/kibana:/usr/share/kibana/config
-  #   networks:
-  #     - monitoring
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    networks:
+      - monitoring
+    command: -config.file=/etc/loki/local-config.yaml
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  vector:
+    image: timberio/vector:0.45.0-debian
+    container_name: vector
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./vector.toml:/etc/vector/vector.toml:ro
+    depends_on:
+      loki:
+        condition: service_healthy
+    networks:
+      - monitoring
+    command: ["--config", "/etc/vector/vector.toml"]
+
 
 volumes:
   prometheus_data: {}
   grafana_data: {}
-
 networks:
   monitoring:
     name: monitoring_net
