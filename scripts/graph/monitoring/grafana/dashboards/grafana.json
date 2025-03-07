@@ -21,15 +21,23 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
+  "id": 2,
   "links": [],
   "panels": [
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "$DS_PROM"
+        "type": "grafana-postgresql-datasource",
+        "uid": "Postgres-uniswap-v2-latest-no-config-defaults"
       },
       "fieldConfig": {
         "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -43,53 +51,350 @@
                 "value": 80
               }
             ]
-          },
-          "unit": "none"
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 3,
+        "h": 5,
         "w": 24,
         "x": 0,
         "y": 0
       },
-      "id": 10,
+      "id": 1,
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
           "fields": "",
-          "values": false
+          "reducer": [
+            "sum"
+          ],
+          "show": false
         },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
+        "showHeader": true
       },
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "sum(eth_rpc_errors) by (job, method)",
-          "instant": true,
-          "legendFormat": "{{job}} - {{method}}",
-          "range": false,
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  d.deployment,\n  i.name,\n  d.failed,\n  d.latest_ethereum_block_number,\n  d.entity_count,\n  d.reorg_count,\n  d.current_reorg_depth,\n  d.max_reorg_depth,\n  d.health,\n  d.synced_at\nFROM subgraphs.subgraph_deployment d\nJOIN info.subgraph_info i ON i.subgraph = d.deployment\nORDER BY d.deployment DESC\nLIMIT 100;",
           "refId": "A"
         }
       ],
-      "title": "Total RPC Errors",
-      "type": "stat"
+      "title": "Deployments (uniswap-v2-latest-no-config-defaults)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "Postgres-uniswap-v2-latest-no-config-defaults"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  e.subgraph_id,\n  i.name,\n  e.message,\n  e.block_range,\n  e.deterministic,\n  e.created_at\nFROM subgraphs.subgraph_error e\nJOIN info.subgraph_info i ON i.subgraph = e.subgraph_id\nORDER BY e.created_at DESC\nLIMIT 100;",
+          "refId": "A"
+        }
+      ],
+      "title": "Errors (uniswap-v2-latest-no-config-defaults)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "Postgres-uniswap-v3-latest-no-config-defaults"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  d.deployment,\n  i.name,\n  d.failed,\n  d.latest_ethereum_block_number,\n  d.entity_count,\n  d.reorg_count,\n  d.current_reorg_depth,\n  d.max_reorg_depth,\n  d.health,\n  d.synced_at\nFROM subgraphs.subgraph_deployment d\nJOIN info.subgraph_info i ON i.subgraph = d.deployment\nORDER BY d.deployment DESC\nLIMIT 100;",
+          "refId": "A"
+        }
+      ],
+      "title": "Deployments (uniswap-v3-latest-no-config-defaults)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "Postgres-uniswap-v3-latest-no-config-defaults"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  e.subgraph_id,\n  i.name,\n  e.message,\n  e.block_range,\n  e.deterministic,\n  e.created_at\nFROM subgraphs.subgraph_error e\nJOIN info.subgraph_info i ON i.subgraph = e.subgraph_id\nORDER BY e.created_at DESC\nLIMIT 100;",
+          "refId": "A"
+        }
+      ],
+      "title": "Errors (uniswap-v3-latest-no-config-defaults)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "Postgres-uniswap-v4-latest-no-config-defaults"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  d.deployment,\n  i.name,\n  d.failed,\n  d.latest_ethereum_block_number,\n  d.entity_count,\n  d.reorg_count,\n  d.current_reorg_depth,\n  d.max_reorg_depth,\n  d.health,\n  d.synced_at\nFROM subgraphs.subgraph_deployment d\nJOIN info.subgraph_info i ON i.subgraph = d.deployment\nORDER BY d.deployment DESC\nLIMIT 100;",
+          "refId": "A"
+        }
+      ],
+      "title": "Deployments (uniswap-v4-latest-no-config-defaults)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "Postgres-uniswap-v4-latest-no-config-defaults"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "id": 243,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  e.subgraph_id,\n  i.name,\n  e.message,\n  e.block_range,\n  e.deterministic,\n  e.created_at\nFROM subgraphs.subgraph_error e\nJOIN info.subgraph_info i ON i.subgraph = e.subgraph_id\nORDER BY e.created_at DESC\nLIMIT 100;",
+          "refId": "A"
+        }
+      ],
+      "title": "Errors (uniswap-v4-latest-no-config-defaults)",
+      "type": "table"
     },
     {
       "datasource": {
@@ -156,7 +461,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 3
+        "y": 36
       },
       "id": 11,
       "options": {
@@ -192,12 +497,384 @@
       "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "Measures duration of block processing for a subgraph deployment",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 20,
+        "w": 24,
+        "x": 0,
+        "y": 45
+      },
+      "id": 247,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (job, le) (rate(deployment_block_processing_duration_bucket[5m])))\n",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Block Processing Duration",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "Measures duration of trigger processing for a subgraph deployment",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 21,
+        "w": 24,
+        "x": 0,
+        "y": 65
+      },
+      "id": 249,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (job, le) (rate(deployment_trigger_processing_duration_bucket[5m])))\n",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Trigger Processing Duration",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "Measures the execution time for handlers",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 28,
+        "w": 24,
+        "x": 0,
+        "y": 86
+      },
+      "id": 248,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (job, handler, le) (rate(deployment_handler_execution_time_bucket[5m])))",
+          "legendFormat": "{{job}} - {{handler}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Handler Execution Time",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "Calculates percentage of syncing progress by subtracting most recent block synced from head block number",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 13,
+        "w": 24,
+        "x": 0,
+        "y": 114
+      },
+      "id": 246,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "(deployment_head / on() group_left() max(ethereum_chain_head_number)) * 100",
+          "instant": true,
+          "legendFormat": "{{job}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Syncing Progress",
+      "type": "barchart"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 127
       },
       "id": 235,
       "panels": [],
@@ -261,7 +938,7 @@
         "h": 20,
         "w": 24,
         "x": 0,
-        "y": 13
+        "y": 128
       },
       "id": 222,
       "options": {
@@ -371,7 +1048,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 33
+        "y": 148
       },
       "id": 202,
       "options": {
@@ -469,7 +1146,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 33
+        "y": 148
       },
       "id": 208,
       "options": {
@@ -589,7 +1266,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 45
+        "y": 160
       },
       "id": 228,
       "options": {
@@ -687,7 +1364,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 45
+        "y": 160
       },
       "id": 212,
       "options": {
@@ -786,7 +1463,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 57
+        "y": 172
       },
       "id": 214,
       "options": {
@@ -885,7 +1562,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 69
+        "y": 184
       },
       "id": 204,
       "options": {
@@ -984,7 +1661,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 69
+        "y": 184
       },
       "id": 229,
       "options": {
@@ -1081,7 +1758,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 81
+        "y": 196
       },
       "id": 226,
       "options": {
@@ -1178,7 +1855,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 81
+        "y": 196
       },
       "id": 210,
       "options": {
@@ -1275,7 +1952,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 93
+        "y": 208
       },
       "id": 211,
       "options": {
@@ -1372,7 +2049,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 93
+        "y": 208
       },
       "id": 230,
       "options": {
@@ -1469,7 +2146,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 105
+        "y": 220
       },
       "id": 227,
       "options": {
@@ -1588,7 +2265,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 105
+        "y": 220
       },
       "id": 207,
       "options": {
@@ -1708,7 +2385,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 117
+        "y": 232
       },
       "id": 215,
       "options": {
@@ -1806,7 +2483,7 @@
         "h": 18,
         "w": 24,
         "x": 0,
-        "y": 129
+        "y": 244
       },
       "id": 224,
       "options": {
@@ -1903,7 +2580,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 147
+        "y": 262
       },
       "id": 217,
       "options": {
@@ -2000,7 +2677,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 147
+        "y": 262
       },
       "id": 236,
       "options": {
@@ -2097,7 +2774,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 157
+        "y": 272
       },
       "id": 238,
       "options": {
@@ -2194,7 +2871,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 157
+        "y": 272
       },
       "id": 242,
       "options": {
@@ -2291,7 +2968,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 167
+        "y": 282
       },
       "id": 240,
       "options": {
@@ -2388,7 +3065,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 167
+        "y": 282
       },
       "id": 241,
       "options": {
@@ -2431,148 +3108,10 @@
       ],
       "title": "Cache GET error duration",
       "type": "timeseries"
-    },
-    {
-      "id": 1,
-      "type": "table",
-      "title": "Deployments (uniswap-v2-latest-no-config-defaults)",
-      "gridPos": {
-        "h": 5,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "Postgres-uniswap-v2-latest-no-config-defaults"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  d.deployment,\n  i.name,\n  d.failed,\n  d.latest_ethereum_block_number,\n  d.entity_count,\n  d.reorg_count,\n  d.current_reorg_depth,\n  d.max_reorg_depth,\n  d.health,\n  d.synced_at\nFROM subgraphs.subgraph_deployment d\nJOIN info.subgraph_info i ON i.subgraph = d.deployment\nORDER BY d.deployment DESC\nLIMIT 100;"
-        }
-      ]
-    },
-    {
-      "id": 2,
-      "type": "table",
-      "title": "Errors (uniswap-v2-latest-no-config-defaults)",
-      "gridPos": {
-        "h": 7,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "Postgres-uniswap-v2-latest-no-config-defaults"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  e.subgraph_id,\n  i.name,\n  e.message,\n  e.block_range,\n  e.deterministic,\n  e.created_at\nFROM subgraphs.subgraph_error e\nJOIN info.subgraph_info i ON i.subgraph = e.subgraph_id\nORDER BY e.created_at DESC\nLIMIT 100;"
-        }
-      ]
-    },
-    {
-      "id": 5,
-      "type": "table",
-      "title": "Deployments (uniswap-v3-latest-no-config-defaults)",
-      "gridPos": {
-        "h": 5,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "Postgres-uniswap-v3-latest-no-config-defaults"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  d.deployment,\n  i.name,\n  d.failed,\n  d.latest_ethereum_block_number,\n  d.entity_count,\n  d.reorg_count,\n  d.current_reorg_depth,\n  d.max_reorg_depth,\n  d.health,\n  d.synced_at\nFROM subgraphs.subgraph_deployment d\nJOIN info.subgraph_info i ON i.subgraph = d.deployment\nORDER BY d.deployment DESC\nLIMIT 100;"
-        }
-      ]
-    },
-    {
-      "id": 6,
-      "type": "table",
-      "title": "Errors (uniswap-v3-latest-no-config-defaults)",
-      "gridPos": {
-        "h": 7,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "Postgres-uniswap-v3-latest-no-config-defaults"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  e.subgraph_id,\n  i.name,\n  e.message,\n  e.block_range,\n  e.deterministic,\n  e.created_at\nFROM subgraphs.subgraph_error e\nJOIN info.subgraph_info i ON i.subgraph = e.subgraph_id\nORDER BY e.created_at DESC\nLIMIT 100;"
-        }
-      ]
-    },
-    {
-      "id": 9,
-      "type": "table",
-      "title": "Deployments (uniswap-v4-latest-no-config-defaults)",
-      "gridPos": {
-        "h": 5,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "Postgres-uniswap-v4-latest-no-config-defaults"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  d.deployment,\n  i.name,\n  d.failed,\n  d.latest_ethereum_block_number,\n  d.entity_count,\n  d.reorg_count,\n  d.current_reorg_depth,\n  d.max_reorg_depth,\n  d.health,\n  d.synced_at\nFROM subgraphs.subgraph_deployment d\nJOIN info.subgraph_info i ON i.subgraph = d.deployment\nORDER BY d.deployment DESC\nLIMIT 100;"
-        }
-      ]
-    },
-    {
-      "id": 10,
-      "type": "table",
-      "title": "Errors (uniswap-v4-latest-no-config-defaults)",
-      "gridPos": {
-        "h": 7,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "Postgres-uniswap-v4-latest-no-config-defaults"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  e.subgraph_id,\n  i.name,\n  e.message,\n  e.block_range,\n  e.deterministic,\n  e.created_at\nFROM subgraphs.subgraph_error e\nJOIN info.subgraph_info i ON i.subgraph = e.subgraph_id\nORDER BY e.created_at DESC\nLIMIT 100;"
-        }
-      ]
     }
   ],
   "preload": false,
-  "refresh": "5s",
+  "refresh": "5m",
   "schemaVersion": 40,
   "tags": [],
   "templating": {
@@ -2612,8 +3151,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Graph Node Prometheus Metrics (Only Prom Panels)",
-  "uid": "beebhbyrvuhoge",
-  "version": 1,
+  "title": "Monitoring",
+  "uid": "def34fagwm1a8a",
+  "version": 11,
   "weekStart": ""
 }
