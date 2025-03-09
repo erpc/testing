@@ -26,9 +26,12 @@ const postgresFile   = './monitoring/grafana/datasources/postgres.yml';
 const grafanaFile    = './monitoring/grafana/dashboards/grafana.json';
 
 // 3) Data structures for the "generate" part
-const prometheusScrape = [];   // will hold {erpcJob, erpcPort, graphJob, graphPort} entries
-const postgresDatasets = [];   // will hold {dsName, dsPort} entries
-const newPanels = [];          // will hold the new Postgres table panels for Grafana
+// Will hold {erpcJob, erpcPort, graphJob, graphPort} entries
+const prometheusScrape = [];
+// Will hold {dsName, dsPort} entries
+const postgresDatasets = [];
+// Will hold the new Postgres table panels for Grafana
+const newPanels = [];
 
 // Base paths if needed for Docker Compose
 const blueprintsBase = '../../blueprints';
@@ -41,17 +44,30 @@ let envOffset = 0;
 // Helper: run Docker Compose
 ////////////////////////////////////////////////////////////////////////////////
 function runDockerCompose(projectName, blueprintPath, variantPath, env) {
-  const finalEnv = { ...process.env, ...env };
-  const composeArgs = [
+  const networkName = env.NETWORK_NAME || `${projectName}_net`;
+
+  // 1) Remove any existing Docker network
+  spawnSync('docker', ['network', 'rm', networkName], { stdio: 'ignore' });
+
+  // 2) (Re)create the Docker network as external.
+  //    For a normal bridge network, we use '--driver bridge'.
+  spawnSync('docker', ['network', 'create', '--driver', 'bridge', networkName], {
+    stdio: 'ignore',
+  });
+
+  // 3) Now run docker-compose, which references that external network
+  const composeFiles = [
     '-p', projectName,
     '-f', path.join(blueprintsBase, blueprintPath, 'docker-compose.yml'),
-    '-f', path.join(variantsBase,   variantPath,   'docker-compose.yml'),
-    'up', '-d'
+    '-f', path.join(variantsBase, variantPath, 'docker-compose.yml'),
+    'up', '-d',
   ];
-  const result = spawnSync('docker-compose', composeArgs, {
+
+  const result = spawnSync('docker-compose', composeFiles, {
     stdio: 'inherit',
-    env: finalEnv
+    env: { ...process.env, ...env },
   });
+
   if (result.status !== 0) {
     throw new Error(`docker-compose up failed for ${projectName}`);
   }
@@ -84,12 +100,12 @@ for (const combo of combos) {
     GRAPH_NODE_PORT5: 8040 + envOffset,
     ELASTICSEARCH_PORT: 9200 + envOffset,
     ERPC_HTTP_PORT: 4000 + envOffset,
-    ERPC_METRICS_PORT: 4001 + envOffset
+    ERPC_METRICS_PORT: 4001 + envOffset,
   };
   envOffset += 100;
 
   // 4a) Spin up Docker containers
-  console.log(`\n=== Starting ${projectName} with offset ${envOffset-100} ===`);
+  console.log(`\n=== Starting ${projectName} with offset ${envOffset - 100} ===`);
   try {
     runDockerCompose(projectName, blueprint, variant, envVars);
   } catch (e) {
@@ -102,7 +118,7 @@ for (const combo of combos) {
     erpcJob:  `erpc-${projectName}`,
     erpcPort: envVars.ERPC_METRICS_PORT,
     graphJob: `graph-node-${projectName}`,
-    graphPort: envVars.GRAPH_NODE_PORT5
+    graphPort: envVars.GRAPH_NODE_PORT5,
   });
 
   // 4c) Postgres DS info
@@ -126,8 +142,7 @@ SELECT
 FROM subgraphs.subgraph_deployment d
 JOIN info.subgraph_info i ON i.subgraph = d.deployment
 ORDER BY d.deployment DESC
-LIMIT 100;
-  `.trim();
+LIMIT 100;`.trim();
 
   const errorsSQL = `
 SELECT
@@ -140,10 +155,9 @@ SELECT
 FROM subgraphs.subgraph_error e
 JOIN info.subgraph_info i ON i.subgraph = e.subgraph_id
 ORDER BY e.created_at DESC
-LIMIT 100;
-  `.trim();
+LIMIT 100;`.trim();
 
-  const nextPanelId    = newPanels.length * 2 + 1;
+  const nextPanelId = newPanels.length * 2 + 1;
   const nextPanelIdErr = nextPanelId + 1;
 
   newPanels.push({
@@ -153,16 +167,16 @@ LIMIT 100;
     gridPos: { h: 5, w: 24, x: 0, y: 0 },
     datasource: {
       type: 'grafana-postgresql-datasource',
-      uid: dsName
+      uid: dsName,
     },
     targets: [
       {
         refId: 'A',
         format: 'table',
         rawQuery: true,
-        rawSql: deploymentSQL
-      }
-    ]
+        rawSql: deploymentSQL,
+      },
+    ],
   });
 
   newPanels.push({
@@ -172,16 +186,16 @@ LIMIT 100;
     gridPos: { h: 7, w: 24, x: 0, y: 0 },
     datasource: {
       type: 'grafana-postgresql-datasource',
-      uid: dsName
+      uid: dsName,
     },
     targets: [
       {
         refId: 'A',
         format: 'table',
         rawQuery: true,
-        rawSql: errorsSQL
-      }
-    ]
+        rawSql: errorsSQL,
+      },
+    ],
   });
 }
 
@@ -248,12 +262,12 @@ datasources:
     console.log(`ℹ️  Loaded existing ${grafanaFile}`);
   } else {
     baseDashboard = {
-      title: "Auto-Generated Dashboard",
+      title: 'Auto-Generated Dashboard',
       schemaVersion: 40,
       version: 1,
-      panels: []
+      panels: [],
     };
-    console.log(`ℹ️  Creating new minimal dashboard skeleton`);
+    console.log('ℹ️  Creating new minimal dashboard skeleton');
   }
 
   for (const p of newPanels) {
@@ -275,8 +289,6 @@ datasources:
 // 5) DEPLOY: For each combo, actually do "graph create" / "graph deploy"
 ////////////////////////////////////////////////////////////////////////////////
 
-// We'll maintain a separate offset for subgraph node ports, if desired
-// Or re-use the same combos if we want to match the same graph port as above
 let subgraphOffset = 0;
 
 for (let i = 0; i < combos.length; i++) {
@@ -286,21 +298,16 @@ for (let i = 0; i < combos.length; i++) {
     continue;
   }
 
-  // Convert variant e.g. 'latest/no-config-defaults' -> 'latest_no_config_defaults'
   const safeVariant = variant.replace(/\//g, '_');
-  const blueprintBase = path.basename(blueprint); // e.g. 'uniswap-v2'
+  const blueprintBase = path.basename(blueprint);
   const subgraphName = `${blueprintBase}-${safeVariant}`;
 
-  // We'll line up subgraph port with the one from the environment if we want
-  // In the generate portion, we used GRAPH_NODE_PORT3 => 8020 + envOffset
-  // So we can do the same approach here, if we want exactly the same port:
   const nodeUrlPort = 8020 + subgraphOffset;
   const ipfsPort    = 5001 + subgraphOffset;
 
   const nodeUrl = `http://localhost:${nodeUrlPort}`;
   const ipfsUrl = `http://localhost:${ipfsPort}`;
 
-  // Path to blueprint folder
   const subgraphFolder = path.resolve('../../blueprints', blueprint);
 
   console.log(`\n=== Deploying Subgraph: ${subgraphName} (node=${nodeUrl}) ===`);
@@ -314,7 +321,7 @@ for (let i = 0; i < combos.length; i++) {
   console.log(`Installing dependencies in ${subgraphFolder}...`);
   const installResult = spawnSync('npm', ['install', '--legacy-peer-deps'], {
     stdio: 'inherit',
-    cwd: subgraphFolder
+    cwd: subgraphFolder,
   });
   if (installResult.status !== 0) {
     console.error(`❌ Failed npm install for "${subgraphName}"`);
@@ -325,7 +332,7 @@ for (let i = 0; i < combos.length; i++) {
   console.log(`\nGenerating types for ${subgraphName}...`);
   const codegenResult = spawnSync('graph', ['codegen', '--output-dir', 'src/types/'], {
     stdio: 'inherit',
-    cwd: subgraphFolder
+    cwd: subgraphFolder,
   });
   if (codegenResult.status !== 0) {
     console.error(`❌ Failed codegen for "${subgraphName}"`);
@@ -336,7 +343,7 @@ for (let i = 0; i < combos.length; i++) {
   console.log(`\nCreating subgraph on node: ${nodeUrl}`);
   const createResult = spawnSync('graph', ['create', subgraphName, '--node', nodeUrl], {
     stdio: 'inherit',
-    cwd: subgraphFolder
+    cwd: subgraphFolder,
   });
   if (createResult.status !== 0) {
     console.error(`❌ Failed to create subgraph "${subgraphName}"`);
@@ -353,11 +360,11 @@ for (let i = 0; i < combos.length; i++) {
       'subgraph.yaml',
       '--ipfs', ipfsUrl,
       '--node', nodeUrl,
-      '--version-label', '0.0.1'
+      '--version-label', '0.0.1',
     ],
     {
       stdio: 'inherit',
-      cwd: subgraphFolder
+      cwd: subgraphFolder,
     }
   );
   if (deployResult.status !== 0) {
@@ -367,23 +374,22 @@ for (let i = 0; i < combos.length; i++) {
 
   console.log(`✅ Successfully deployed: ${subgraphName}`);
 
-  // bump offset
   subgraphOffset += 100;
 }
 
 // Now run the monitoring stack
 {
-  console.log("\n=== Starting monitoring stack ===");
+  console.log('\n=== Starting monitoring stack ===');
   const monitoringResult = spawnSync(
     'docker',
     ['compose', '-f', 'docker-compose.monitoring.yml', 'up', '-d'],
     { stdio: 'inherit' }
   );
   if (monitoringResult.status !== 0) {
-    console.error("❌ Failed to start monitoring stack with docker-compose.monitoring.yml");
+    console.error('❌ Failed to start monitoring stack with docker-compose.monitoring.yml');
     process.exit(monitoringResult.status);
   }
-  console.log("✅ Monitoring stack is running.");
+  console.log('✅ Monitoring stack is running.');
 }
 
 console.log('\n✅ Environment generated + all subgraphs deployed!');
