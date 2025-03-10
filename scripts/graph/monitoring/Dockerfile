@@ -14,6 +14,7 @@ COPY prometheus/alert.rules /etc/prometheus/alert.rules
 # Copy Grafana files
 COPY --from=grafana /usr/share/grafana /usr/share/grafana
 COPY --from=grafana /etc/grafana /etc/grafana
+COPY prometheus /etc/prometheus
 COPY grafana/grafana.ini /etc/grafana/grafana.ini
 COPY grafana/datasources/prometheus.yml /etc/grafana/provisioning/datasources/prometheus.yml
 COPY grafana/datasources/postgres.yml /etc/grafana/provisioning/datasources/postgres.yml

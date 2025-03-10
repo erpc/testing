@@ -6,9 +6,6 @@ services:
       - "3000:3000"  # Grafana
       - "9090:9090"  # Prometheus
     volumes:
-      - ./monitoring/prometheus:/etc/prometheus
-      - ./monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini
-      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards
       - prometheus_data:/prometheus
       - grafana_data:/var/lib/grafana
     networks:
