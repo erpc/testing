@@ -63,19 +63,20 @@ function runDockerCompose(projectName, blueprintPath, variantPath, env) {
 
   // 3) Now run docker-compose, which references that external network
   const composeFiles = [
+    'compose',
     '-p', projectName,
-    '-f', path.join(blueprintsBase, blueprintPath, 'docker-compose.yml'),
-    '-f', path.join(variantsBase, variantPath, 'docker-compose.yml'),
+    '-f', path.resolve(blueprintsBase, blueprintPath, 'docker-compose.yml'),
+    '-f', path.resolve(variantsBase, variantPath, 'docker-compose.yml'),
     'up', '-d',
   ];
 
-  const result = spawnSync('docker-compose', composeFiles, {
+  const result = spawnSync('docker', composeFiles, {
     stdio: 'inherit',
     env: { ...process.env, ...env },
   });
 
   if (result.status !== 0) {
-    throw new Error(`docker-compose up failed for ${projectName}`);
+    throw new Error(`docker compose up failed for ${projectName}`);
   }
 }
 
