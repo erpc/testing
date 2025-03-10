@@ -1,8 +1,8 @@
 - variant: latest/no-config-defaults
   blueprint: graph/uniswap-v3
 
-- variant: latest/only-config-defaults
+- variant: latest/no-config-defaults
   blueprint: graph/uniswap-v3
 
-- variant: latest/only-config-defaults
+- variant: latest/no-config-defaults
   blueprint: graph/uniswap-v4
