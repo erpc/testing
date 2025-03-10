@@ -2,8 +2,14 @@
 
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
 import yaml from 'js-yaml';
 import { spawnSync } from 'child_process';
+
+// Load environment variables
+dotenv.config({
+  path: path.resolve('../../.env'),
+});
 
 ////////////////////////////////////////////////////////////////////////////////
 // 1) Load graph.yaml combos
@@ -101,6 +107,7 @@ for (const combo of combos) {
     ELASTICSEARCH_PORT: 9200 + envOffset,
     ERPC_HTTP_PORT: 4000 + envOffset,
     ERPC_METRICS_PORT: 4001 + envOffset,
+    ...process.env,
   };
   envOffset += 100;
 
