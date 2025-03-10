@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+
+  - job_name: erpc-uniswap-v2-latest-no-config-defaults
+    static_configs:
+      - targets: ['host.docker.internal:4001']
+
+  - job_name: graph-node-uniswap-v2-latest-no-config-defaults
+    static_configs:
+      - targets: ['host.docker.internal:8040']
+
+  - job_name: erpc-uniswap-v3-latest-no-config-defaults
+    static_configs:
+      - targets: ['host.docker.internal:4101']
+
+  - job_name: graph-node-uniswap-v3-latest-no-config-defaults
+    static_configs:
+      - targets: ['host.docker.internal:8140']
+
+  - job_name: erpc-uniswap-v4-latest-no-config-defaults
+    static_configs:
+      - targets: ['host.docker.internal:4201']
+
+  - job_name: graph-node-uniswap-v4-latest-no-config-defaults
+    static_configs:
+      - targets: ['host.docker.internal:8240']

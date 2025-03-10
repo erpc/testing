@@ -1,0 +1,17 @@
+{
+  "name": "graph-erpc-integration-testing",
+  "version": "1.0.0",
+  "description": "Graph + eRPC integration testing",
+  "type": "module",
+  "scripts": {
+    "start": "npm i && node graph.js",
+    "clean": "docker system prune -af --volumes"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "execa": "^9.5.2",
+    "fs": "0.0.1-security",
+    "js-yaml": "^4.1.0",
+    "yaml": "^2.3.1"
+  }
+}

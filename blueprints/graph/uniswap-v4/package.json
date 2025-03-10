@@ -1,0 +1,42 @@
+{
+  "name": "uniswap-v4-subgraph",
+  "version": "1.0.0",
+  "repository": "https://github.com/Uniswap/v4-subgraph",
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "build": "run-s codegen && graph build",
+    "build:docker": "docker build -t matchstick .",
+    "buildonly": "graph build",
+    "deploy:alchemy": "graph deploy --node https://subgraphs.alchemy.com/api/subgraphs/deploy --ipfs https://ipfs.satsuma.xyz",
+    "codegen": "graph codegen --output-dir src/types/",
+    "test": "graph test -d",
+    "test:no-tty": "docker run -i --rm --mount type=bind,source=$INIT_CWD,target=/matchstick matchstick"
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "^0.64.1",
+    "@graphprotocol/graph-ts": "^0.32.0",
+    "@typescript-eslint/eslint-plugin": "^2.0.0",
+    "@typescript-eslint/parser": "^2.0.0",
+    "@uniswap/eslint-config": "^1.2.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^6.1.0",
+    "matchstick-as": "^0.6.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^1.18.2",
+    "typescript": "^3.5.2"
+  },
+  "dependencies": {
+    "lint-staged": "^15.2.7"
+  },
+  "lint-staged": {
+    "*.{js,ts}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  }
+}

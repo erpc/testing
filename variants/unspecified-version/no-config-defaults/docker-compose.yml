@@ -11,8 +11,9 @@ services:
       LOG_LEVEL: "${LOG_LEVEL}"
     # No volume mount needed since we're using defaults
     networks:
-      - erpc
+      default: {}
 
 networks:
-  erpc:
-    driver: bridge
+  default:
+    name: ${NETWORK_NAME}
+    external: true

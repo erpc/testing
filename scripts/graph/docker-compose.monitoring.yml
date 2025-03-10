@@ -1,0 +1,48 @@
+services:
+  monitoring:
+    build: ./monitoring
+    container_name: monitoring
+    ports:
+      - "3000:3000"  # Grafana
+      - "9090:9090"  # Prometheus
+    volumes:
+      - prometheus_data:/prometheus
+      - grafana_data:/var/lib/grafana
+    networks:
+      - monitoring
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    networks:
+      - monitoring
+    command: -config.file=/etc/loki/local-config.yaml
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  vector:
+    image: timberio/vector:0.45.0-debian
+    container_name: vector
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./vector.toml:/etc/vector/vector.toml:ro
+    depends_on:
+      loki:
+        condition: service_healthy
+    networks:
+      - monitoring
+    command: ["--config", "/etc/vector/vector.toml"]
+
+
+volumes:
+  prometheus_data: {}
+  grafana_data: {}
+networks:
+  monitoring:
+    name: monitoring_net

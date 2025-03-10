@@ -1,0 +1,39 @@
+name: "Run Variants of Traffic on a Fixed Config"
+
+on:
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: 'Select an eRPC variant (e.g., unversioned/cache-everything-via-redis)'
+        required: true
+
+jobs:
+  run-tests:
+    name: "Testing variant: ${{ github.event.inputs.variant }} with various blueprints"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        blueprint:
+          - k6-evm-random-methods
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Run eRPC with variant ${{ github.event.inputs.variant }}
+        run: |
+          cd testing/variants/${{ github.event.inputs.variant }}
+          docker-compose up -d
+
+      - name: Run k6 test for blueprint ${{ matrix.blueprint }}
+        run: |
+          k6 run testing/blueprints/${{ matrix.blueprint }}
+
+      - name: Save Test Results
+        run: |
+          # Save to artifacts, or push to an external metrics store.
+          cat results.json
+
+      - name: Teardown
+        run: |
+          cd testing/variants/${{ github.event.inputs.variant }}
+          docker-compose down

@@ -8,3 +8,5 @@
 scripts/docker-compose.yaml
 
 visualization/data/
+
+.env

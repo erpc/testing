@@ -9,3 +9,10 @@
   
 - variant: latest/only-network-level-failsafe
   blueprint: ponder/friendtech
+
+- variant: latest/no-config-defaults
+  blueprint: graph/uniswap-v2
+
+- variant: latest/only-network-level-failsafe
+  blueprint: graph/uniswap-v2
+
