@@ -71,7 +71,17 @@ function runDockerCompose(projectName, blueprintPath, variantPath, env) {
     console.error(` ⚠️ Failed to remove existing containers for ${projectName}`);
   }
 
-  // 4) Now run docker-compose, which references that external network
+  // 4) Install NPM dependencies
+  const installResult = spawnSync('npm', ['install', '--legacy-peer-deps'], {
+    stdio: 'inherit',
+    cwd: path.resolve(blueprintsBase, blueprintPath),
+  });
+  if (installResult.status !== 0) {
+    throw new Error(`Failed to install npm dependencies for ${projectName}`);
+  }
+  console.log(`✅ Successfully installed npm dependencies for ${projectName}`);
+
+  // 5) Now run docker-compose, which references that external network
   const composeArgs = [
     'compose',
     '-p', projectName,
@@ -94,7 +104,7 @@ function runDockerCompose(projectName, blueprintPath, variantPath, env) {
 // 4) GENERATE: Loop combos to build environment (Prometheus + Postgres + Grafana)
 ////////////////////////////////////////////////////////////////////////////////
 for (const combo of combos) {
-  const { blueprint, variant } = combo;
+  const { blueprint, variant, environment } = combo;
   if (!blueprint || !variant) {
     console.warn('Skipping combo missing blueprint or variant:', combo);
     continue;
@@ -116,6 +126,8 @@ for (const combo of combos) {
     ELASTICSEARCH_PORT: 9200 + envOffset,
     ERPC_HTTP_PORT: 4000 + envOffset,
     ERPC_METRICS_PORT: 4001 + envOffset,
+    ERPC_PPROF_PORT: 6000 + envOffset,
+    ...environment,
     ...process.env,
   };
   envOffset += 100;
@@ -303,7 +315,7 @@ datasources:
 let subgraphOffset = 0;
 
 for (let comboIndex = 0; comboIndex < combos.length; comboIndex++) {
-  const { blueprint, variant } = combos[comboIndex];
+  const { blueprint, variant, environment } = combos[comboIndex];
   if (!blueprint || !variant) {
     console.warn(`Skipping subgraph entry #${comboIndex}: missing blueprint or variant`);
     continue;
@@ -349,35 +361,61 @@ for (let comboIndex = 0; comboIndex < combos.length; comboIndex++) {
 
   // 5c) graph create
   console.log(`\nCreating subgraph on node: ${nodeUrl}`);
-  const createResult = spawnSync('graph', ['create', subgraphName, '--node', nodeUrl], {
-    stdio: 'inherit',
-    cwd: subgraphFolder,
-  });
-  if (createResult.status !== 0) {
-    console.error(`❌ Failed to create subgraph "${subgraphName}"`);
-    process.exit(createResult.status);
+  for (let attempt = 0; attempt < 30; attempt++) {
+    try {
+      const createResult = spawnSync('graph', ['create', subgraphName, '--node', nodeUrl], {
+        stdio: 'inherit',
+        cwd: subgraphFolder,
+        env: { ...process.env, ...environment },
+      });
+      if (createResult.status !== 0) {
+        throw new Error(`${createResult?.error?.toString()} ${createResult?.stderr?.toString()} ${createResult?.stdout?.toString()}`);
+      }
+      break;
+    } catch (e) {
+      console.error(`❌ Failed to create subgraph "${subgraphName}": ${e.message}`);
+      if (attempt === 29) {
+        process.exit(1);
+      } else {
+        console.log(`Retrying after 5 seconds... (attempt ${attempt + 1} of 10)`);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+    }
   }
 
   // 5d) graph deploy
   console.log(`\nDeploying "${subgraphName}" to ${nodeUrl}...`);
-  const deployResult = spawnSync(
-    'graph',
-    [
-      'deploy',
-      subgraphName,
-      'subgraph.yaml',
-      '--ipfs', ipfsUrl,
-      '--node', nodeUrl,
-      '--version-label', '0.0.1',
-    ],
-    {
-      stdio: 'inherit',
-      cwd: subgraphFolder,
+  for (let attempt = 0; attempt < 30; attempt++) {
+    try {
+      const deployResult = spawnSync(
+        'graph',
+        [
+          'deploy',
+          subgraphName,
+          'subgraph.yaml',
+          '--ipfs', ipfsUrl,
+          '--node', nodeUrl,
+          '--version-label', '0.0.1',
+        ],
+        {
+          stdio: 'inherit',
+          cwd: subgraphFolder,
+          env: { ...process.env, ...environment },
+        }
+      );
+      if (deployResult.status !== 0) {
+        throw new Error(`${deployResult?.error?.toString()} ${deployResult?.stderr?.toString()} ${deployResult?.stdout?.toString()}`);
+      }
+      break;
+    } catch (e) {
+      console.error(`❌ Failed to deploy subgraph "${subgraphName}": ${e.message}`);
+      if (attempt === 29) {
+        process.exit(1);
+      } else {
+        console.log(`Retrying after 5 seconds... (attempt ${attempt + 1} of 30)`);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
     }
-  );
-  if (deployResult.status !== 0) {
-    console.error(`❌ Failed to deploy subgraph "${subgraphName}"`);
-    process.exit(deployResult.status);
   }
 
   console.log(`✅ Successfully deployed: ${subgraphName}`);
@@ -396,7 +434,7 @@ for (let comboIndex = 0; comboIndex < combos.length; comboIndex++) {
       '-f', 'docker-compose.monitoring.yml',
       'up', '-d', '--remove-orphans', '--force-recreate', '--build',
     ],
-    { stdio: 'inherit' }
+    { stdio: 'inherit', env: process.env }
   );
   if (monitoringResult.status !== 0) {
     console.error('❌ Failed to start monitoring stack with docker-compose.monitoring.yml');

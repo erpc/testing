@@ -1,8 +1,11 @@
-- variant: latest/no-config-defaults
-  blueprint: graph/uniswap-v3
+# - variant: unspecified-version/only-network-level-failsafe
+#   blueprint: graph/uniswap-v3-100k-block-range
 
-- variant: latest/no-config-defaults
-  blueprint: graph/uniswap-v3
+- variant: unspecified-version/only-network-level-failsafe
+  blueprint: graph/uniswap-v3-basic
 
-- variant: latest/no-config-defaults
-  blueprint: graph/uniswap-v4
+# - variant: latest/no-config-defaults
+#   blueprint: graph/uniswap-v3
+
+# - variant: latest/no-config-defaults
+#   blueprint: graph/uniswap-v4
