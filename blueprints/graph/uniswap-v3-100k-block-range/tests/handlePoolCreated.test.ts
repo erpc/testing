@@ -1,6 +1,6 @@
 import { Address, BigInt, Bytes, ethereum } from '@graphprotocol/graph-ts'
-import { assert, beforeEach, clearStore, createMockedFunction, test } from 'matchstick-as/assembly/index'
-import { describe, test } from 'matchstick-as/assembly/index'
+import { assert, beforeEach, clearStore, createMockedFunction, test } from 'matchstick-as'
+import { describe, test } from 'matchstick-as'
 
 import { populateEmptyPools } from '../src/backfill'
 import { convertTokenToDecimal, NULL_ETH_HEX_STRING } from '../src/utils'

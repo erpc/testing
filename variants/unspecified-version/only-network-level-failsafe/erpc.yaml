@@ -52,33 +52,33 @@ projects:
       - endpoint: alchemy://${ALCHEMY_API_KEY}
       - endpoint: envio://rpc.hypersync.xyz
 
-      # # Tenderly
-      # - endpoint: https://arbitrum.gateway.tenderly.co/${TENDERLY_ACCESS_KEY}
-      # - endpoint: https://mainnet.gateway.tenderly.co/${TENDERLY_ACCESS_KEY}
-      # - endpoint: https://base.gateway.tenderly.co/${TENDERLY_ACCESS_KEY}
+      # Tenderly
+      - endpoint: https://arbitrum.gateway.tenderly.co/${TENDERLY_ACCESS_KEY}
+      - endpoint: https://mainnet.gateway.tenderly.co/${TENDERLY_ACCESS_KEY}
+      - endpoint: https://base.gateway.tenderly.co/${TENDERLY_ACCESS_KEY}
 
-      # # Dwellir
-      # - endpoint: https://api-eth-mainnet-archive-reth.dwellir.com/${DWELLIR_API_KEY}
-      # - endpoint: https://api-arbitrum-mainnet-archive.dwellir.com/${DWELLIR_API_KEY}
-      # - endpoint: https://api-base-mainnet-archive.dwellir.com/${DWELLIR_API_KEY}
+      # Dwellir
+      - endpoint: https://api-eth-mainnet-archive-reth.dwellir.com/${DWELLIR_API_KEY}
+      - endpoint: https://api-arbitrum-mainnet-archive.dwellir.com/${DWELLIR_API_KEY}
+      - endpoint: https://api-base-mainnet-archive.dwellir.com/${DWELLIR_API_KEY}
 
       # BlastAPI
       - endpoint: https://arbitrum-one.blastapi.io/${BLAST_API_KEY}
       - endpoint: https://eth-mainnet.blastapi.io/${BLAST_API_KEY}
       - endpoint: https://base-mainnet.blastapi.io/${BLAST_API_KEY}
 
-      # # Chainstack
-      # - endpoint: https://arbitrum-mainnet.core.chainstack.com/${CHAINSTACK_ARB_KEY}
-      # - endpoint: https://ethereum-mainnet.core.chainstack.com/${CHAINSTACK_ETH_KEY}
-      # - endpoint: https://base-mainnet.core.chainstack.com/${CHAINSTACK_BASE_KEY}
+      # Chainstack
+      - endpoint: https://arbitrum-mainnet.core.chainstack.com/${CHAINSTACK_ARB_KEY}
+      - endpoint: https://ethereum-mainnet.core.chainstack.com/${CHAINSTACK_ETH_KEY}
+      - endpoint: https://base-mainnet.core.chainstack.com/${CHAINSTACK_BASE_KEY}
       
-      # # QuickNode
-      # - endpoint: ${QUICKNODE_ARB_ENDPOINT}
-      # - endpoint: ${QUICKNODE_ETH_ENDPOINT}
-      # - endpoint: ${QUICKNODE_BASE_ENDPOINT}
+      # QuickNode
+      - endpoint: ${QUICKNODE_ARB_ENDPOINT}
+      - endpoint: ${QUICKNODE_ETH_ENDPOINT}
+      - endpoint: ${QUICKNODE_BASE_ENDPOINT}
 
-      # # OnFinality
-      # - endpoint: https://arbitrum.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}
-      # - endpoint: https://eth.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}
-      # - endpoint: https://base.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}
+      # OnFinality
+      - endpoint: https://arbitrum.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}
+      - endpoint: https://eth.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}
+      - endpoint: https://base.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}
 
