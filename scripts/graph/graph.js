@@ -6,6 +6,8 @@ import dotenv from 'dotenv';
 import yaml from 'js-yaml';
 import { spawnSync } from 'child_process';
 
+const GLOBAL_PREFIX = "erpc-testing-graph"
+
 // Load environment variables
 dotenv.config({
   path: path.resolve('../../.env'),
@@ -92,7 +94,7 @@ for (const combo of combos) {
   }
 
   // Safe project name
-  const projectName   = `combo-${comboIndex}`;
+  const projectName   = `${GLOBAL_PREFIX}-combo-${comboIndex}`;
 
   // Docker environment ports
   const envVars = {
@@ -300,7 +302,7 @@ for (let comboIndex = 0; comboIndex < combos.length; comboIndex++) {
     continue;
   }
 
-  const subgraphName = `combo-${comboIndex}`;
+  const subgraphName = `${GLOBAL_PREFIX}-combo-${comboIndex}`;
   const nodeUrlPort = 8020 + subgraphOffset;
   const ipfsPort    = 5001 + subgraphOffset;
 
@@ -381,7 +383,7 @@ for (let comboIndex = 0; comboIndex < combos.length; comboIndex++) {
   console.log('\n=== Starting monitoring stack ===');
   const monitoringResult = spawnSync(
     'docker',
-    ['compose', '-p', 'erpc-testing-graph-monitoring', '-f', 'docker-compose.monitoring.yml', 'up', '-d'],
+    ['compose', '-p', `${GLOBAL_PREFIX}-monitoring`, '-f', 'docker-compose.monitoring.yml', 'up', '-d'],
     { stdio: 'inherit' }
   );
   if (monitoringResult.status !== 0) {
