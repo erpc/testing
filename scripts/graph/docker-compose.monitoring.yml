@@ -39,7 +39,6 @@ services:
       - monitoring
     command: ["--config", "/etc/vector/vector.toml"]
 
-
 volumes:
   prometheus_data: {}
   grafana_data: {}

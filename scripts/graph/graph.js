@@ -64,16 +64,23 @@ function runDockerCompose(projectName, blueprintPath, variantPath, env) {
     stdio: 'ignore',
   });
 
-  // 3) Now run docker-compose, which references that external network
-  const composeFiles = [
+  // 3) Force remvoe all volumes and existing containers
+  try {
+    spawnSync('docker', ['compose', '-p', projectName, 'down', '-v'], { stdio: 'inherit' });
+  } catch (e) {
+    console.error(` ⚠️ Failed to remove existing containers for ${projectName}`);
+  }
+
+  // 4) Now run docker-compose, which references that external network
+  const composeArgs = [
     'compose',
     '-p', projectName,
     '-f', path.resolve(blueprintsBase, blueprintPath, 'docker-compose.yml'),
     '-f', path.resolve(variantsBase, variantPath, 'docker-compose.yml'),
-    'up', '-d',
+    'up', '-d', '--remove-orphans', '--force-recreate', '--build',
   ];
 
-  const result = spawnSync('docker', composeFiles, {
+  const result = spawnSync('docker', composeArgs, {
     stdio: 'inherit',
     env: { ...process.env, ...env },
   });
@@ -383,7 +390,12 @@ for (let comboIndex = 0; comboIndex < combos.length; comboIndex++) {
   console.log('\n=== Starting monitoring stack ===');
   const monitoringResult = spawnSync(
     'docker',
-    ['compose', '-p', `${GLOBAL_PREFIX}-monitoring`, '-f', 'docker-compose.monitoring.yml', 'up', '-d'],
+    [
+      'compose',
+      '-p', `${GLOBAL_PREFIX}-monitoring`,
+      '-f', 'docker-compose.monitoring.yml',
+      'up', '-d', '--remove-orphans', '--force-recreate', '--build',
+    ],
     { stdio: 'inherit' }
   );
   if (monitoringResult.status !== 0) {
