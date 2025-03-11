@@ -32,6 +32,7 @@ try {
 // 2) Paths for the files we want to overwrite from scratch
 const prometheusFile = './monitoring/prometheus/prometheus.yml';
 const postgresFile   = './monitoring/grafana/datasources/postgres.yml';
+const grafanaTemplate    = './monitoring/grafana/dashboards/grafana.template.json';
 const grafanaFile    = './monitoring/grafana/dashboards/grafana.json';
 
 // 3) Data structures for the "generate" part
@@ -357,12 +358,7 @@ datasources:
 
 // 4e-3) Append new panels to Grafana dashboard (if they don't exist yet)
 {
-  const baseDashboard = {
-    title: 'Auto-Generated Dashboard',
-    schemaVersion: 40,
-    version: 1,
-    panels: [],
-  };
+  const baseDashboard = JSON.parse(fs.readFileSync(grafanaTemplate, 'utf8'));
   console.log('ℹ️  Creating new minimal dashboard skeleton');
 
   for (const p of newPanels) {
