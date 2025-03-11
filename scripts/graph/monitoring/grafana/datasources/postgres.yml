@@ -1,10 +1,10 @@
 apiVersion: 1
 datasources:
 
-  - name: Postgres-uniswap-v3-latest-no-config-defaults
+  - name: Postgres-combo-0
     type: postgres
     url: host.docker.internal:5432
-    uid: Postgres-uniswap-v3-latest-no-config-defaults
+    uid: Postgres-combo-0
     user: graph-node
     secureJsonData:
       password: let-me-in
@@ -18,10 +18,27 @@ datasources:
       postgresVersion: 903
       timescaledb: false
 
-  - name: Postgres-uniswap-v3-latest-only-network-level-failsafe
+  - name: Postgres-combo-100
     type: postgres
     url: host.docker.internal:5532
-    uid: Postgres-uniswap-v3-latest-only-network-level-failsafe
+    uid: Postgres-combo-100
+    user: graph-node
+    secureJsonData:
+      password: let-me-in
+    jsonData:
+      database: graph-node
+      sslmode: 'disable'
+      maxOpenConns: 100
+      maxIdleConns: 100
+      maxIdleConnsAuto: true
+      connMaxLifetime: 14400
+      postgresVersion: 903
+      timescaledb: false
+
+  - name: Postgres-combo-200
+    type: postgres
+    url: host.docker.internal:5632
+    uid: Postgres-combo-200
     user: graph-node
     secureJsonData:
       password: let-me-in

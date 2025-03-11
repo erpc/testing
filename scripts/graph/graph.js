@@ -91,9 +91,7 @@ for (const combo of combos) {
   }
 
   // Safe project name
-  const blueprintName = path.basename(blueprint);
-  const safeVariant   = variant.replace(/\//g, '-');
-  const projectName   = `${blueprintName}-${safeVariant}`;
+  const projectName   = `combo-${envOffset}`;
 
   // Docker environment ports
   const envVars = {
@@ -306,10 +304,7 @@ for (let i = 0; i < combos.length; i++) {
     continue;
   }
 
-  const safeVariant = variant.replace(/\//g, '_');
-  const blueprintBase = path.basename(blueprint);
-  const subgraphName = `${blueprintBase}-${safeVariant}`;
-
+  const subgraphName = `combo-${subgraphOffset}`;
   const nodeUrlPort = 8020 + subgraphOffset;
   const ipfsPort    = 5001 + subgraphOffset;
 
@@ -390,7 +385,7 @@ for (let i = 0; i < combos.length; i++) {
   console.log('\n=== Starting monitoring stack ===');
   const monitoringResult = spawnSync(
     'docker',
-    ['compose', '-f', 'docker-compose.monitoring.yml', 'up', '-d'],
+    ['compose', '-p', 'erpc-testing-graph-monitoring', '-f', 'docker-compose.monitoring.yml', 'up', '-d'],
     { stdio: 'inherit' }
   );
   if (monitoringResult.status !== 0) {

@@ -3,18 +3,26 @@ global:
 
 scrape_configs:
 
-  - job_name: erpc-uniswap-v3-latest-no-config-defaults
+  - job_name: erpc-combo-0
     static_configs:
       - targets: ['host.docker.internal:4001']
 
-  - job_name: graph-node-uniswap-v3-latest-no-config-defaults
+  - job_name: graph-node-combo-0
     static_configs:
       - targets: ['host.docker.internal:8040']
 
-  - job_name: erpc-uniswap-v3-latest-only-network-level-failsafe
+  - job_name: erpc-combo-100
     static_configs:
       - targets: ['host.docker.internal:4101']
 
-  - job_name: graph-node-uniswap-v3-latest-only-network-level-failsafe
+  - job_name: graph-node-combo-100
     static_configs:
       - targets: ['host.docker.internal:8140']
+
+  - job_name: erpc-combo-200
+    static_configs:
+      - targets: ['host.docker.internal:4201']
+
+  - job_name: graph-node-combo-200
+    static_configs:
+      - targets: ['host.docker.internal:8240']
