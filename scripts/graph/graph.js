@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-import fs from 'fs';
+import fs, { copyFileSync } from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 import yaml from 'js-yaml';
 import { spawnSync } from 'child_process';
+import os from 'os';
 
 const GLOBAL_PREFIX = "erpc-testing-graph"
 
@@ -52,21 +53,92 @@ let comboIndex = 0;
 ////////////////////////////////////////////////////////////////////////////////
 // Helper: run Docker Compose
 ////////////////////////////////////////////////////////////////////////////////
-function runDockerCompose(projectName, blueprintPath, variantPath, env) {
+function runDockerCompose(projectName, blueprintPath, variantPath, env, filePatterns = [/\.ya?ml$/, /\.toml$/], ignorePatterns = [/.*node_modules.*/, /.*\.git.*/]) {
   const networkName = env.NETWORK_NAME || `${projectName}_net`;
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `${projectName}-`));
+  
+  console.log(`📁 Created temporary working directory: ${tempDir}`);
 
+  // Helper function to copy matching files
+  function copyMatchingFiles(sourceDir, destDir) {
+    if (!fs.existsSync(sourceDir)) {
+      console.warn(`⚠️ Source directory does not exist: ${sourceDir}`);
+      return;
+    }
+    
+    if (!fs.existsSync(destDir)) {
+      fs.mkdirSync(destDir, { recursive: true });
+    }
+    
+    // Function to recursively process directories
+    function processDirectory(currentPath, relativePath = '') {
+      const currentFullPath = path.join(sourceDir, relativePath, currentPath);
+      const entries = fs.readdirSync(currentFullPath);
+      
+      for (const entry of entries) {
+        const entryPath = path.join(currentFullPath, entry);
+        // const entryRelativePath = path.join(relativePath, currentPath, entry);
+        const entryDestPath = path.join(destDir, relativePath, currentPath, entry);
+        
+        if (!fs.statSync(entryPath).isDirectory()) {
+          // Check if file matches patterns
+          const shouldCopy = filePatterns.some(pattern => pattern.test(entryPath)) && !ignorePatterns.some(pattern => pattern.test(entryPath));
+          if (shouldCopy) {
+            // Ensure destination directory exists
+            const entryDestDir = path.dirname(entryDestPath);
+            if (!fs.existsSync(entryDestDir)) {
+              fs.mkdirSync(entryDestDir, { recursive: true });
+            }
+            // Copy file
+            fs.copyFileSync(entryPath, entryDestPath);
+          }
+        }
+      }
+    }
+    
+    // Start processing from root directory
+    processDirectory('');
+  }
+  
+  // Copy files from blueprint and variant directories
+  const fullBlueprintPath = path.resolve(blueprintsBase, blueprintPath);
+  const fullVariantPath = path.resolve(variantsBase, variantPath);
+  
+  copyMatchingFiles(fullBlueprintPath, tempDir);
+  copyMatchingFiles(fullVariantPath, tempDir);
+  
   // 1) Remove any existing Docker network
-  spawnSync('docker', ['network', 'rm', networkName], { stdio: 'ignore' });
+  spawnSync('docker', ['network', 'rm', networkName], { stdio: 'inherit', cwd: tempDir });
 
   // 2) (Re)create the Docker network as external.
   //    For a normal bridge network, we use '--driver bridge'.
   spawnSync('docker', ['network', 'create', '--driver', 'bridge', networkName], {
-    stdio: 'ignore',
+    stdio: 'inherit',
+    cwd: tempDir,
   });
 
-  // 3) Force remvoe all volumes and existing containers
+  copyFileSync(
+    path.resolve(blueprintsBase, blueprintPath, 'docker-compose.yml'),
+    path.resolve(tempDir, 'docker-compose.blueprint.yml'),
+  );
+  copyFileSync(
+    path.resolve(variantsBase, variantPath, 'docker-compose.yml'),
+    path.resolve(tempDir, 'docker-compose.variant.yml'),
+  );
+
+  const composeArgsBase = [
+    'compose',
+    '-p', projectName,
+    '-f', path.resolve(tempDir, 'docker-compose.variant.yml'),
+    '-f', path.resolve(tempDir, 'docker-compose.blueprint.yml'),
+  ];
+
+  // 3) Force remove all volumes and existing containers
   try {
-    spawnSync('docker', ['compose', '-p', projectName, 'down', '-v'], { stdio: 'inherit' });
+    spawnSync('docker', [
+      ...composeArgsBase,
+      'down', '-v',
+    ], { stdio: 'inherit', env: { ...process.env, ...env }, cwd: tempDir });
   } catch (e) {
     console.error(` ⚠️ Failed to remove existing containers for ${projectName}`);
   }
@@ -74,30 +146,30 @@ function runDockerCompose(projectName, blueprintPath, variantPath, env) {
   // 4) Install NPM dependencies
   const installResult = spawnSync('npm', ['install', '--legacy-peer-deps'], {
     stdio: 'inherit',
-    cwd: path.resolve(blueprintsBase, blueprintPath),
+    cwd: fullBlueprintPath,
   });
   if (installResult.status !== 0) {
     throw new Error(`Failed to install npm dependencies for ${projectName}`);
   }
   console.log(`✅ Successfully installed npm dependencies for ${projectName}`);
 
-  // 5) Now run docker-compose, which references that external network
+  // 5) Now run docker-compose
   const composeArgs = [
-    'compose',
-    '-p', projectName,
-    '-f', path.resolve(blueprintsBase, blueprintPath, 'docker-compose.yml'),
-    '-f', path.resolve(variantsBase, variantPath, 'docker-compose.yml'),
+    ...composeArgsBase,
     'up', '-d', '--remove-orphans', '--force-recreate', '--build',
   ];
 
   const result = spawnSync('docker', composeArgs, {
     stdio: 'inherit',
+    cwd: tempDir,
     env: { ...process.env, ...env },
   });
 
   if (result.status !== 0) {
     throw new Error(`docker compose up failed for ${projectName}`);
   }
+
+  console.log(`✅ Successfully started ${projectName}`);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -426,12 +498,23 @@ for (let comboIndex = 0; comboIndex < combos.length; comboIndex++) {
 // Now run the monitoring stack
 {
   console.log('\n=== Starting monitoring stack ===');
+  const baseArgs = [
+    'compose',
+    '-p', `${GLOBAL_PREFIX}-monitoring`,
+    '-f', 'docker-compose.monitoring.yml',
+  ];
+  try {
+    spawnSync('docker', [
+      ...baseArgs,
+      'down', '-v',
+    ], { stdio: 'inherit', env: process.env });
+  } catch (e) {
+    console.error(' ⚠️ Failed to remove existing containers for monitoring stack');
+  }
   const monitoringResult = spawnSync(
     'docker',
     [
-      'compose',
-      '-p', `${GLOBAL_PREFIX}-monitoring`,
-      '-f', 'docker-compose.monitoring.yml',
+      ...baseArgs,
       'up', '-d', '--remove-orphans', '--force-recreate', '--build',
     ],
     { stdio: 'inherit', env: process.env }
