@@ -45,6 +45,7 @@ const variantsBase   = '../../variants';
 
 // We'll track a port offset for the Docker environment
 let envOffset = 0;
+let comboIndex = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helper: run Docker Compose
@@ -91,7 +92,7 @@ for (const combo of combos) {
   }
 
   // Safe project name
-  const projectName   = `combo-${envOffset}`;
+  const projectName   = `combo-${comboIndex}`;
 
   // Docker environment ports
   const envVars = {
@@ -109,6 +110,7 @@ for (const combo of combos) {
     ...process.env,
   };
   envOffset += 100;
+  comboIndex += 1;
 
   // 4a) Spin up Docker containers
   console.log(`\n=== Starting ${projectName} with offset ${envOffset - 100} ===`);
@@ -262,19 +264,13 @@ datasources:
 
 // 4e-3) Append new panels to Grafana dashboard (if they don't exist yet)
 {
-  let baseDashboard;
-  if (fs.existsSync(grafanaFile)) {
-    baseDashboard = JSON.parse(fs.readFileSync(grafanaFile, 'utf8'));
-    console.log(`ℹ️  Loaded existing ${grafanaFile}`);
-  } else {
-    baseDashboard = {
-      title: 'Auto-Generated Dashboard',
-      schemaVersion: 40,
-      version: 1,
-      panels: [],
-    };
-    console.log('ℹ️  Creating new minimal dashboard skeleton');
-  }
+  const baseDashboard = {
+    title: 'Auto-Generated Dashboard',
+    schemaVersion: 40,
+    version: 1,
+    panels: [],
+  };
+  console.log('ℹ️  Creating new minimal dashboard skeleton');
 
   for (const p of newPanels) {
     const alreadyExists = baseDashboard.panels.find(
@@ -297,14 +293,14 @@ datasources:
 
 let subgraphOffset = 0;
 
-for (let i = 0; i < combos.length; i++) {
-  const { blueprint, variant } = combos[i];
+for (let comboIndex = 0; comboIndex < combos.length; comboIndex++) {
+  const { blueprint, variant } = combos[comboIndex];
   if (!blueprint || !variant) {
-    console.warn(`Skipping subgraph entry #${i}: missing blueprint or variant`);
+    console.warn(`Skipping subgraph entry #${comboIndex}: missing blueprint or variant`);
     continue;
   }
 
-  const subgraphName = `combo-${subgraphOffset}`;
+  const subgraphName = `combo-${comboIndex}`;
   const nodeUrlPort = 8020 + subgraphOffset;
   const ipfsPort    = 5001 + subgraphOffset;
 
