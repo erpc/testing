@@ -73,9 +73,9 @@ projects:
       - endpoint: https://base-mainnet.core.chainstack.com/${CHAINSTACK_BASE_KEY}
       
       # QuickNode
-      - endpoint: ${QUICKNODE_ARB_ENDPOINT}
-      - endpoint: ${QUICKNODE_ETH_ENDPOINT}
-      - endpoint: ${QUICKNODE_BASE_ENDPOINT}
+      # - endpoint: ${QUICKNODE_ARB_ENDPOINT}
+      # - endpoint: ${QUICKNODE_ETH_ENDPOINT}
+      # - endpoint: ${QUICKNODE_BASE_ENDPOINT}
 
       # OnFinality
       - endpoint: https://arbitrum.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}
