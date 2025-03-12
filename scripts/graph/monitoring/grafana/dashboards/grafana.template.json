@@ -404,82 +404,56 @@
         "type": "barchart"
       },
       {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "PBFA97CFB590B2093"
-        },
+        "id": 246,
+        "type": "barchart",
+        "title": "Syncing Progress",
         "description": "Calculates percentage of syncing progress by subtracting most recent block synced from head block number",
+        "gridPos": {
+          "x": 0,
+          "y": 102,
+          "h": 13,
+          "w": 24
+        },
         "fieldConfig": {
           "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
             "custom": {
-              "axisBorderShow": false,
-              "axisCenteredZero": false,
-              "axisColorMode": "text",
-              "axisLabel": "",
-              "axisPlacement": "auto",
+              "lineWidth": 1,
               "fillOpacity": 80,
               "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              },
-              "lineWidth": 1,
+              "axisPlacement": "auto",
+              "axisLabel": "",
+              "axisColorMode": "text",
+              "axisBorderShow": false,
               "scaleDistribution": {
                 "type": "linear"
+              },
+              "axisCenteredZero": false,
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
               },
               "thresholdsStyle": {
                 "mode": "off"
               }
+            },
+            "color": {
+              "mode": "continuous-RdYlGr"
             },
             "mappings": [],
             "thresholds": {
               "mode": "absolute",
               "steps": [
                 {
-                  "color": "orange",
+                  "color": "dark-red",
                   "value": null
-                },
-                {
-                  "color": "green",
-                  "value": 80
                 }
               ]
-            }
+            },
+            "unit": "percent",
+            "max": 94
           },
           "overrides": []
-        },
-        "gridPos": {
-          "h": 13,
-          "w": 24,
-          "x": 0,
-          "y": 114
-        },
-        "id": 246,
-        "options": {
-          "barRadius": 0,
-          "barWidth": 0.97,
-          "fullHighlight": false,
-          "groupWidth": 0.7,
-          "legend": {
-            "calcs": [],
-            "displayMode": "table",
-            "placement": "bottom",
-            "showLegend": true
-          },
-          "orientation": "horizontal",
-          "showValue": "auto",
-          "stacking": "none",
-          "tooltip": {
-            "hideZeros": false,
-            "mode": "single",
-            "sort": "none"
-          },
-          "xTickLabelRotation": 0,
-          "xTickLabelSpacing": 0
         },
         "pluginVersion": "11.5.2",
         "targets": [
@@ -493,8 +467,32 @@
             "refId": "A"
           }
         ],
-        "title": "Syncing Progress",
-        "type": "barchart"
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "options": {
+          "orientation": "horizontal",
+          "xTickLabelRotation": 0,
+          "xTickLabelSpacing": 0,
+          "showValue": "auto",
+          "stacking": "none",
+          "groupWidth": 0.7,
+          "barWidth": 0.97,
+          "barRadius": 0,
+          "fullHighlight": false,
+          "tooltip": {
+            "mode": "single",
+            "sort": "none",
+            "hideZeros": false
+          },
+          "legend": {
+            "showLegend": true,
+            "displayMode": "table",
+            "placement": "bottom",
+            "calcs": []
+          }
+        }
       },
       {
         "collapsed": false,

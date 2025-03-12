@@ -1,0 +1,55 @@
+logLevel: ${LOG_LEVEL}
+
+server:
+  httpPort: 4000
+
+projects:
+  - id: main
+    networkDefaults:
+      directiveDefaults:
+        retryPending: false
+        retryEmpty: false
+      failsafe:
+        timeout:
+          duration: 60s
+        hedge:
+          quantile: 0.99
+          maxCount: 2
+          minDelay: 30ms
+          maxDelay: 1s
+        retry:
+          maxAttempts: 4
+          delay: 0ms
+      evm:
+        integrity:
+          enforceHighestBlock: true
+          enforceGetLogsBlockRange: true
+    networks:
+      - architecture: evm
+        evm:
+          chainId: 1
+    upstreamDefaults:
+      evm:
+        getLogsMaxBlockRange: 2000
+      failsafe:
+        timeout:
+          duration: 60s
+        hedge: ~
+        retry: ~
+      rateLimitAutoTune:
+        enabled: true               
+        adjustmentPeriod: "30s"     
+        errorRateThreshold: 0.1     
+        increaseFactor: 1.1         
+        decreaseFactor: 0.7         
+        minBudget: 1                
+        maxBudget: 100000  
+    upstreams:      
+      - endpoint: alchemy://${ALCHEMY_API_KEY}
+      - endpoint: envio://rpc.hypersync.xyz
+      - endpoint: https://mainnet.gateway.tenderly.co/${TENDERLY_ACCESS_KEY}
+      - endpoint: https://api-eth-mainnet-archive-reth.dwellir.com/${DWELLIR_API_KEY}
+      - endpoint: https://eth-mainnet.blastapi.io/${BLAST_API_KEY}
+      - endpoint: https://ethereum-mainnet.core.chainstack.com/${CHAINSTACK_ETH_KEY}
+      - endpoint: https://eth.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}
+      - endpoint: ${QUICKNODE_ETH_ENDPOINT}
