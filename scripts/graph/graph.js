@@ -417,14 +417,18 @@ for (let comboIndex = 0; comboIndex < combos.length; comboIndex++) {
   }
 
   // 5b) graph codegen
-  console.log(`\nGenerating types for ${subgraphName}...`);
-  const codegenResult = spawnSync('graph', ['codegen', '--output-dir', 'src/types/'], {
-    stdio: 'inherit',
-    cwd: subgraphFolder,
-  });
-  if (codegenResult.status !== 0) {
-    console.error(`❌ Failed codegen for "${subgraphName}"`);
-    process.exit(codegenResult.status);
+  try {
+    console.log(`\nGenerating types for ${subgraphName}...`);
+    const codegenResult = spawnSync('graph', ['codegen', '--output-dir', 'src/types/'], {
+      stdio: 'inherit',
+      cwd: subgraphFolder,
+    });
+    if (codegenResult.status !== 0) {
+      console.error(`⚠️ Failed codegen for "${subgraphName}": ${codegenResult?.error?.toString()} ${codegenResult?.stderr?.toString()} ${codegenResult?.stdout?.toString()}`);
+      process.exit(codegenResult.status);
+      }
+  } catch (e) {
+    console.error(`⚠️ Failed codegen for "${subgraphName}": ${e.message}`);
   }
 
   // 5c) graph create

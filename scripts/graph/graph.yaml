@@ -4,11 +4,11 @@
 # - variant: unspecified-version/chain-1-only-network-level-failsafe
 #   blueprint: graph/chain-1-uniswap-v2-20k-block-range
 
-- variant: unspecified-version/chain-1-only-network-level-failsafe
-  blueprint: graph/chain-1-uniswap-v3-basic
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-uniswap-v3-basic
 
-- variant: unspecified-version/chain-1-only-network-level-failsafe
-  blueprint: graph/chain-1-uniswap-v3-20k-block-range
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-uniswap-v3-20k-block-range
 
 # - variant: unspecified-version/chain-1-only-network-level-failsafe
 #   blueprint: graph/chain-1-uniswap-v3-100k-block-range
@@ -18,3 +18,10 @@
 
 # - variant: latest/no-config-defaults
 #   blueprint: graph/uniswap-v4
+
+- variant: unspecified-version/chain-1-only-network-level-failsafe
+  blueprint: graph/chain-1-axie-basic
+
+- variant: unspecified-version/chain-1-only-network-level-failsafe
+  blueprint: graph/chain-1-axie-50k-block-range
+
