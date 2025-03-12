@@ -1,3 +1,7 @@
+[[ipfs]]
+url = "http://ipfs:5001"
+client_type = "Cat"
+
 [store]
 [store.primary]
 connection = "postgresql://graph-node:let-me-in@postgres:5432/graph-node"

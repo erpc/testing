@@ -47,7 +47,7 @@ services:
       default: {}
 
   graph-node:
-    image: graphprotocol/graph-node
+    image: 716091368358.dkr.ecr.us-west-2.amazonaws.com/graph-node:v0.35.1.16-clickhouse-8
     ports:
       - "${GRAPH_NODE_PORT1:-8000}:8000"
       - "${GRAPH_NODE_PORT2:-8001}:8001"

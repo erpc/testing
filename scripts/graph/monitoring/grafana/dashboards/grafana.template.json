@@ -411,8 +411,8 @@
         "gridPos": {
           "x": 0,
           "y": 102,
-          "h": 13,
-          "w": 24
+          "h": 10,
+          "w": 12
         },
         "fieldConfig": {
           "defaults": {
@@ -450,8 +450,9 @@
                 }
               ]
             },
-            "unit": "percent",
-            "max": 94
+            "max": 94,
+            "decimals": 5,
+            "unit": "percent"
           },
           "overrides": []
         },
@@ -495,6 +496,73 @@
         }
       },
       {
+        "id": 250,
+        "type": "table",
+        "title": "Synced Block",
+        "description": "",
+        "gridPos": {
+          "x": 12,
+          "y": 102,
+          "h": 10,
+          "w": 12
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "dark-red",
+                  "value": null
+                }
+              ]
+            },
+            "color": {
+              "mode": "continuous-RdYlGr"
+            }
+          },
+          "overrides": []
+        },
+        "pluginVersion": "11.5.2",
+        "targets": [
+          {
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "max(deployment_head) by (job)",
+            "instant": true,
+            "legendFormat": "{{job}}",
+            "range": false,
+            "refId": "A",
+            "format": "table"
+          }
+        ],
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "options": {
+          "showHeader": true,
+          "cellHeight": "sm",
+          "footer": {
+            "show": false,
+            "reducer": [
+              "sum"
+            ],
+            "countRows": false,
+            "fields": ""
+          },
+          "frameIndex": 1
+        }
+      },
+      {
         "collapsed": false,
         "gridPos": {
           "h": 1,
@@ -508,9 +576,14 @@
         "type": "row"
       },
       {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${datasource}"
+        "id": 222,
+        "type": "bargauge",
+        "title": "P95 resp. time",
+        "gridPos": {
+          "x": 0,
+          "y": 101,
+          "h": 13,
+          "w": 24
         },
         "fieldConfig": {
           "defaults": {
@@ -526,7 +599,6 @@
                 "type": "value"
               }
             ],
-            "noValue": "0",
             "thresholds": {
               "mode": "absolute",
               "steps": [
@@ -556,41 +628,12 @@
                 }
               ]
             },
+            "noValue": "0",
             "unit": "s"
           },
           "overrides": []
         },
-        "gridPos": {
-          "h": 20,
-          "w": 24,
-          "x": 0,
-          "y": 128
-        },
-        "id": 222,
-        "options": {
-          "displayMode": "gradient",
-          "legend": {
-            "calcs": [],
-            "displayMode": "list",
-            "placement": "bottom",
-            "showLegend": false
-          },
-          "maxVizHeight": 300,
-          "minVizHeight": 16,
-          "minVizWidth": 8,
-          "namePlacement": "auto",
-          "orientation": "horizontal",
-          "reduceOptions": {
-            "calcs": [
-              "lastNotNull"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "showUnfilled": true,
-          "sizing": "auto",
-          "valueMode": "color"
-        },
+        "transparent": true,
         "pluginVersion": "11.5.2",
         "targets": [
           {
@@ -599,14 +642,40 @@
               "uid": "PAE45454D0EDB9216"
             },
             "editorMode": "code",
-            "expr": "histogram_quantile(0.95, sum(rate(erpc_upstream_request_duration_seconds_bucket{network!=\"n/a\"}[30s])) by (le, job, network, upstream)) > 0",
-            "legendFormat": "{{job}} / {{upstream}} / {{network}}",
-            "refId": "A"
+            "expr": "histogram_quantile(0.95, sum(rate(erpc_upstream_request_duration_seconds_bucket{network!=\"n/a\"}[30s])) by (le, job)) > 0",
+            "legendFormat": "{{job}}",
+            "refId": "A",
+            "range": true
           }
         ],
-        "title": "P95 resp. time",
-        "transparent": true,
-        "type": "bargauge"
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": ""
+          },
+          "orientation": "horizontal",
+          "legend": {
+            "showLegend": false,
+            "displayMode": "list",
+            "placement": "bottom",
+            "calcs": []
+          },
+          "displayMode": "gradient",
+          "valueMode": "color",
+          "namePlacement": "auto",
+          "showUnfilled": true,
+          "sizing": "auto",
+          "minVizWidth": 8,
+          "minVizHeight": 16,
+          "maxVizHeight": 300
+        }
       },
       {
         "datasource": {
