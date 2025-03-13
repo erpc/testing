@@ -145,14 +145,18 @@ function runDockerCompose(projectName, blueprintPath, variantPath, env, filePatt
   }
 
   // 4) Install NPM dependencies
-  const installResult = spawnSync('npm', ['install', '--legacy-peer-deps'], {
-    stdio: 'inherit',
-    cwd: fullBlueprintPath,
-  });
-  if (installResult.status !== 0) {
-    throw new Error(`Failed to install npm dependencies for ${projectName}`);
+  if (fs.existsSync(path.resolve(fullBlueprintPath, 'package.json'))) {
+    const installResult = spawnSync('npm', ['install', '--legacy-peer-deps'], {
+      stdio: 'inherit',
+      cwd: fullBlueprintPath,
+    });
+    if (installResult.status !== 0) {
+      throw new Error(`Failed to install npm dependencies for ${projectName}`);
+    }
+    console.log(`✅ Successfully installed npm dependencies for ${projectName}`);
+  } else {
+    console.log(`⚠️ No package.json found for ${projectName}, skipping npm install`);
   }
-  console.log(`✅ Successfully installed npm dependencies for ${projectName}`);
 
   // 5) Now run docker-compose
   const composeArgs = [
@@ -240,11 +244,13 @@ SELECT
   d.current_reorg_depth,
   d.max_reorg_depth,
   d.health,
-  d.synced_at
+  -- Safely extract synced_at if it exists, NULL otherwise
+  (to_jsonb(d)->>'synced_at')::timestamptz AS synced_at
 FROM subgraphs.subgraph_deployment d
 JOIN info.subgraph_info i ON i.subgraph = d.deployment
 ORDER BY d.deployment DESC
-LIMIT 100;`.trim();
+LIMIT 100;
+`.trim();
 
   const errorsSQL = `
 SELECT
@@ -406,29 +412,38 @@ for (let comboIndex = 0; comboIndex < combos.length; comboIndex++) {
   }
 
   // 5a) npm install
-  console.log(`Installing dependencies in ${subgraphFolder}...`);
-  const installResult = spawnSync('npm', ['install', '--legacy-peer-deps'], {
-    stdio: 'inherit',
-    cwd: subgraphFolder,
-  });
-  if (installResult.status !== 0) {
-    console.error(`❌ Failed npm install for "${subgraphName}"`);
-    process.exit(installResult.status);
-  }
-
-  // 5b) graph codegen
-  try {
-    console.log(`\nGenerating types for ${subgraphName}...`);
-    const codegenResult = spawnSync('graph', ['codegen', '--output-dir', 'src/types/'], {
+  if (fs.existsSync(path.resolve(subgraphFolder, 'package.json'))) {
+    console.log(`Installing dependencies in ${subgraphFolder}...`);
+    const installResult = spawnSync('npm', ['install', '--legacy-peer-deps'], {
       stdio: 'inherit',
       cwd: subgraphFolder,
     });
-    if (codegenResult.status !== 0) {
-      console.error(`⚠️ Failed codegen for "${subgraphName}": ${codegenResult?.error?.toString()} ${codegenResult?.stderr?.toString()} ${codegenResult?.stdout?.toString()}`);
-      process.exit(codegenResult.status);
+    if (installResult.status !== 0) {
+      console.error(`❌ Failed npm install for "${subgraphName}"`);
+      process.exit(installResult.status);
+    }
+
+    // 5b) graph codegen
+    try {
+      console.log(`\nGenerating types for ${subgraphName}...`);
+      spawnSync('graph', ['--version'], {
+        stdio: 'inherit',
+        cwd: subgraphFolder,
+      });
+      const codegenResult = spawnSync('graph', ['codegen', '--output-dir', 'src/types/'], {
+        stdio: 'inherit',
+        cwd: subgraphFolder,
+      });
+      if (codegenResult.status !== 0) {
+        console.error(`⚠️ Failed codegen for "${subgraphName}": ${codegenResult?.error?.toString()} ${codegenResult?.stderr?.toString()} ${codegenResult?.stdout?.toString()}`);
+        // process.exit(codegenResult.status);
       }
-  } catch (e) {
-    console.error(`⚠️ Failed codegen for "${subgraphName}": ${e.message}`);
+    } catch (e) {
+      console.error(`⚠️ Failed codegen for "${subgraphName}": ${e.message}`);
+    }
+
+  } else {
+    console.log(`⚠️ No package.json found for ${subgraphName}, skipping npm install`);
   }
 
   // 5c) graph create

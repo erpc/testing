@@ -4,7 +4,7 @@ dataSources:
       abis:
         - file: 1.json
           name: ax
-      apiVersion: 0.0.4
+      apiVersion: 0.0.6
       entities:
         - AxieSpawned
         - AxieRebirthed
@@ -39,4 +39,4 @@ dataSources:
       startBlock: 9775160
 schema:
   file: schema.graphql
-specVersion: 0.0.2
+specVersion: 0.0.5

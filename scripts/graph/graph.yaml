@@ -19,9 +19,16 @@
 # - variant: latest/no-config-defaults
 #   blueprint: graph/uniswap-v4
 
-- variant: unspecified-version/chain-1-only-network-level-failsafe
-  blueprint: graph/chain-1-axie-basic
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-basic
+
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-50k-block-range
+
 
 - variant: unspecified-version/chain-1-only-network-level-failsafe
-  blueprint: graph/chain-1-axie-50k-block-range
+  blueprint: graph/chain-1-rocketpool-basic
+
+- variant: unspecified-version/chain-1-only-network-level-failsafe
+  blueprint: graph/chain-1-rocketpool-100k-block-range
 
