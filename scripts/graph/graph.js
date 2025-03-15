@@ -227,138 +227,141 @@ async function runDockerCompose(projectName, blueprintPath, variantPath, env, fi
 ////////////////////////////////////////////////////////////////////////////////
 // 4) GENERATE: Loop combos to build environment (Prometheus + Postgres + Grafana)
 ////////////////////////////////////////////////////////////////////////////////
-for (const combo of combos) {
-  const { blueprint, variant, environment } = combo;
-  if (!blueprint || !variant) {
-    console.warn('Skipping combo missing blueprint or variant:', combo);
-    continue;
+async function generateEnvironment() {
+  for (const combo of combos) {
+    await (async (combo) => {
+      const { blueprint, variant, environment } = combo;
+      if (!blueprint || !variant) {
+        console.warn('Skipping combo missing blueprint or variant:', combo);
+        return;
+      }
+
+      // Safe project name
+      const projectName   = `${GLOBAL_PREFIX}-combo-${comboIndex}`;
+
+      // Docker environment ports
+      const envVars = {
+        NETWORK_NAME: `${projectName}_net`,
+        POSTGRES_PORT: 5432 + envOffset,
+        IPFS_PORT: 5001 + envOffset,
+        GRAPH_NODE_PORT1: 8000 + envOffset,
+        GRAPH_NODE_PORT2: 8001 + envOffset,
+        GRAPH_NODE_PORT3: 8020 + envOffset,
+        GRAPH_NODE_PORT4: 8030 + envOffset,
+        GRAPH_NODE_PORT5: 8040 + envOffset,
+        ELASTICSEARCH_PORT: 9200 + envOffset,
+        ERPC_HTTP_PORT: 4000 + envOffset,
+        ERPC_METRICS_PORT: 4001 + envOffset,
+        ERPC_PPROF_PORT: 6000 + envOffset,
+        ...environment,
+        ...process.env,
+      };
+      envOffset += 100;
+      comboIndex += 1;
+
+      // 4a) Spin up Docker containers
+      console.log(`\n=== Starting ${projectName} with offset ${envOffset - 100} ===`);
+      try {
+        await runDockerCompose(projectName, blueprint, variant, envVars);
+      } catch (e) {
+        console.error(`❌ ${e.message}`);
+        process.exit(1);
+      }
+
+      // 4b) Prometheus scrape config
+      prometheusScrape.push({
+        erpcJob:  `erpc-${projectName}`,
+        erpcPort: envVars.ERPC_METRICS_PORT,
+        graphJob: `graph-node-${projectName}`,
+        graphPort: envVars.GRAPH_NODE_PORT5,
+      });
+
+      // 4c) Postgres DS info
+      const dsName = `Postgres-${projectName}`;
+      const dsPort = envVars.POSTGRES_PORT;
+      postgresDatasets.push({ dsName, dsPort });
+
+      // 4d) Build 2 new "Deployments" / "Errors" panels for Grafana
+      const deploymentSQL = `
+    SELECT
+      d.deployment,
+      i.name,
+      d.failed,
+      d.latest_ethereum_block_number,
+      d.entity_count,
+      d.reorg_count,
+      d.current_reorg_depth,
+      d.max_reorg_depth,
+      d.health,
+      -- Safely extract synced_at if it exists, NULL otherwise
+      (to_jsonb(d)->>'synced_at')::timestamptz AS synced_at
+    FROM subgraphs.subgraph_deployment d
+    JOIN info.subgraph_info i ON i.subgraph = d.deployment
+    ORDER BY d.deployment DESC
+    LIMIT 100;
+    `.trim();
+
+      const errorsSQL = `
+    SELECT
+      e.subgraph_id,
+      i.name,
+      e.message,
+      e.block_range,
+      e.deterministic,
+      e.created_at
+    FROM subgraphs.subgraph_error e
+    JOIN info.subgraph_info i ON i.subgraph = e.subgraph_id
+    ORDER BY e.created_at DESC
+    LIMIT 100;`.trim();
+
+      const nextPanelId = newPanels.length * 2 + 1;
+      const nextPanelIdErr = nextPanelId + 1;
+
+      newPanels.push({
+        id: nextPanelId,
+        type: 'table',
+        title: `Deployments (${projectName})`,
+        gridPos: { h: 5, w: 24, x: 0, y: 0 },
+        datasource: {
+          type: 'grafana-postgresql-datasource',
+          uid: dsName,
+        },
+        targets: [
+          {
+            refId: 'A',
+            format: 'table',
+            rawQuery: true,
+            rawSql: deploymentSQL,
+          },
+        ],
+      });
+
+      newPanels.push({
+        id: nextPanelIdErr,
+        type: 'table',
+        title: `Errors (${projectName})`,
+        gridPos: { h: 7, w: 24, x: 0, y: 0 },
+        datasource: {
+          type: 'grafana-postgresql-datasource',
+          uid: dsName,
+        },
+        targets: [
+          {
+            refId: 'A',
+            format: 'table',
+            rawQuery: true,
+            rawSql: errorsSQL,
+          },
+        ],
+      });
+    })(combo);
   }
 
-  // Safe project name
-  const projectName   = `${GLOBAL_PREFIX}-combo-${comboIndex}`;
+  // 4e) Now write out Prometheus, Postgres DS, and append to Grafana JSON
 
-  // Docker environment ports
-  const envVars = {
-    NETWORK_NAME: `${projectName}_net`,
-    POSTGRES_PORT: 5432 + envOffset,
-    IPFS_PORT: 5001 + envOffset,
-    GRAPH_NODE_PORT1: 8000 + envOffset,
-    GRAPH_NODE_PORT2: 8001 + envOffset,
-    GRAPH_NODE_PORT3: 8020 + envOffset,
-    GRAPH_NODE_PORT4: 8030 + envOffset,
-    GRAPH_NODE_PORT5: 8040 + envOffset,
-    ELASTICSEARCH_PORT: 9200 + envOffset,
-    ERPC_HTTP_PORT: 4000 + envOffset,
-    ERPC_METRICS_PORT: 4001 + envOffset,
-    ERPC_PPROF_PORT: 6000 + envOffset,
-    ...environment,
-    ...process.env,
-  };
-  envOffset += 100;
-  comboIndex += 1;
-
-  // 4a) Spin up Docker containers
-  console.log(`\n=== Starting ${projectName} with offset ${envOffset - 100} ===`);
-  try {
-    runDockerCompose(projectName, blueprint, variant, envVars);
-  } catch (e) {
-    console.error(`❌ ${e.message}`);
-    process.exit(1);
-  }
-
-  // 4b) Prometheus scrape config
-  prometheusScrape.push({
-    erpcJob:  `erpc-${projectName}`,
-    erpcPort: envVars.ERPC_METRICS_PORT,
-    graphJob: `graph-node-${projectName}`,
-    graphPort: envVars.GRAPH_NODE_PORT5,
-  });
-
-  // 4c) Postgres DS info
-  const dsName = `Postgres-${projectName}`;
-  const dsPort = envVars.POSTGRES_PORT;
-  postgresDatasets.push({ dsName, dsPort });
-
-  // 4d) Build 2 new "Deployments" / "Errors" panels for Grafana
-  const deploymentSQL = `
-SELECT
-  d.deployment,
-  i.name,
-  d.failed,
-  d.latest_ethereum_block_number,
-  d.entity_count,
-  d.reorg_count,
-  d.current_reorg_depth,
-  d.max_reorg_depth,
-  d.health,
-  -- Safely extract synced_at if it exists, NULL otherwise
-  (to_jsonb(d)->>'synced_at')::timestamptz AS synced_at
-FROM subgraphs.subgraph_deployment d
-JOIN info.subgraph_info i ON i.subgraph = d.deployment
-ORDER BY d.deployment DESC
-LIMIT 100;
-`.trim();
-
-  const errorsSQL = `
-SELECT
-  e.subgraph_id,
-  i.name,
-  e.message,
-  e.block_range,
-  e.deterministic,
-  e.created_at
-FROM subgraphs.subgraph_error e
-JOIN info.subgraph_info i ON i.subgraph = e.subgraph_id
-ORDER BY e.created_at DESC
-LIMIT 100;`.trim();
-
-  const nextPanelId = newPanels.length * 2 + 1;
-  const nextPanelIdErr = nextPanelId + 1;
-
-  newPanels.push({
-    id: nextPanelId,
-    type: 'table',
-    title: `Deployments (${projectName})`,
-    gridPos: { h: 5, w: 24, x: 0, y: 0 },
-    datasource: {
-      type: 'grafana-postgresql-datasource',
-      uid: dsName,
-    },
-    targets: [
-      {
-        refId: 'A',
-        format: 'table',
-        rawQuery: true,
-        rawSql: deploymentSQL,
-      },
-    ],
-  });
-
-  newPanels.push({
-    id: nextPanelIdErr,
-    type: 'table',
-    title: `Errors (${projectName})`,
-    gridPos: { h: 7, w: 24, x: 0, y: 0 },
-    datasource: {
-      type: 'grafana-postgresql-datasource',
-      uid: dsName,
-    },
-    targets: [
-      {
-        refId: 'A',
-        format: 'table',
-        rawQuery: true,
-        rawSql: errorsSQL,
-      },
-    ],
-  });
-}
-
-// 4e) Now write out Prometheus, Postgres DS, and append to Grafana JSON
-
-// 4e-1) Write Prometheus
-{
-  let content = `global:
+  // 4e-1) Write Prometheus
+  {
+    let content = `global:
   scrape_interval: 15s
 
 scrape_configs:
@@ -373,237 +376,246 @@ scrape_configs:
     static_configs:
       - targets: ['host.docker.internal:${c.graphPort}']
 `;
-  }
-
-  fs.writeFileSync(prometheusFile, content.trim() + '\n', 'utf8');
-  console.log(`\n✅ Wrote fresh ${prometheusFile}`);
-}
-
-// 4e-2) Write Postgres datasources
-{
-  let content = `apiVersion: 1
-datasources:
-`;
-  for (const ds of postgresDatasets) {
-    content += `
-  - name: ${ds.dsName}
-    type: postgres
-    url: host.docker.internal:${ds.dsPort}
-    uid: ${ds.dsName}
-    user: graph-node
-    secureJsonData:
-      password: let-me-in
-    jsonData:
-      database: graph-node
-      sslmode: 'disable'
-      maxOpenConns: 100
-      maxIdleConns: 100
-      maxIdleConnsAuto: true
-      connMaxLifetime: 14400
-      postgresVersion: 903
-      timescaledb: false
-`;
-  }
-
-  fs.writeFileSync(postgresFile, content.trim() + '\n', 'utf8');
-  console.log(`✅ Wrote fresh ${postgresFile}`);
-}
-
-// 4e-3) Append new panels to Grafana dashboard (if they don't exist yet)
-{
-  const baseDashboard = JSON.parse(fs.readFileSync(grafanaTemplate, 'utf8'));
-  console.log('ℹ️  Creating new minimal dashboard skeleton');
-
-  for (const p of newPanels) {
-    const alreadyExists = baseDashboard.panels.find(
-      (panel) => panel.title === p.title
-    );
-    if (alreadyExists) {
-      console.log(`⚠️  Skipping panel "${p.title}" (already exists)`);
-      continue;
     }
-    baseDashboard.panels.push(p);
+
+    fs.writeFileSync(prometheusFile, content.trim() + '\n', 'utf8');
+    console.log(`\n✅ Wrote fresh ${prometheusFile}`);
   }
 
-  fs.writeFileSync(grafanaFile, JSON.stringify(baseDashboard, null, 2), 'utf8');
-  console.log(`✅ Updated ${grafanaFile} with Postgres panels (no duplicates)`);
+  // 4e-2) Write Postgres datasources
+  {
+    let content = `apiVersion: 1
+  datasources:
+  `;
+    for (const ds of postgresDatasets) {
+      content += `
+    - name: ${ds.dsName}
+      type: postgres
+      url: host.docker.internal:${ds.dsPort}
+      uid: ${ds.dsName}
+      user: graph-node
+      secureJsonData:
+        password: let-me-in
+      jsonData:
+        database: graph-node
+        sslmode: 'disable'
+        maxOpenConns: 100
+        maxIdleConns: 100
+        maxIdleConnsAuto: true
+        connMaxLifetime: 14400
+        postgresVersion: 903
+        timescaledb: false
+  `;
+    }
+
+    fs.writeFileSync(postgresFile, content.trim() + '\n', 'utf8');
+    console.log(`✅ Wrote fresh ${postgresFile}`);
+  }
+
+  // 4e-3) Append new panels to Grafana dashboard (if they don't exist yet)
+  {
+    const baseDashboard = JSON.parse(fs.readFileSync(grafanaTemplate, 'utf8'));
+    console.log('ℹ️  Creating new minimal dashboard skeleton');
+
+    for (const p of newPanels) {
+      const alreadyExists = baseDashboard.panels.find(
+        (panel) => panel.title === p.title
+      );
+      if (alreadyExists) {
+        console.log(`⚠️  Skipping panel "${p.title}" (already exists)`);
+        continue;
+      }
+      baseDashboard.panels.push(p);
+    }
+
+    fs.writeFileSync(grafanaFile, JSON.stringify(baseDashboard, null, 2), 'utf8');
+    console.log(`✅ Updated ${grafanaFile} with Postgres panels (no duplicates)`);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 5) DEPLOY: For each combo, actually do "graph create" / "graph deploy"
 ////////////////////////////////////////////////////////////////////////////////
 
-let subgraphOffset = 0;
+generateEnvironment().then(async () => {
+  console.log('\n=== Environment generated, waiting 30 seconds before deploying subgraphs ===');
+  await new Promise(resolve => setTimeout(resolve, 30000));
 
-for (let comboIndex = 0; comboIndex < combos.length; comboIndex++) {
-  (async (comboIndex, subgraphOffset) => {
-    const { blueprint, variant, environment } = combos[comboIndex];
-    if (!blueprint || !variant) {
-      console.warn(`Skipping subgraph entry #${comboIndex}: missing blueprint or variant`);
-      return;
-    }
+  let subgraphOffset = 0;
 
-    const subgraphName = `${GLOBAL_PREFIX}-combo-${comboIndex}`;
-    const nodeUrlPort = 8020 + subgraphOffset;
-    const ipfsPort    = 5001 + subgraphOffset;
-
-    const nodeUrl = `http://localhost:${nodeUrlPort}`;
-    const ipfsUrl = `http://localhost:${ipfsPort}`;
-
-    const subgraphFolder = path.resolve('../../blueprints', blueprint);
-
-    console.log(`\n=== Deploying Subgraph: ${subgraphName} (node=${nodeUrl}) ===`);
-
-    if (!fs.existsSync(subgraphFolder)) {
-      console.error(`❌ Subgraph folder not found: ${subgraphFolder}`);
-      return;
-    }
-
-    // 5a) npm install
-    if (fs.existsSync(path.resolve(subgraphFolder, 'package.json'))) {
-      console.log(`Installing dependencies in ${subgraphFolder}...`);
-      try {
-        await runCommand('npm', ['install', '--legacy-peer-deps'], { cwd: subgraphFolder });
-      } catch (e) {
-        console.error(`❌ Failed npm install for "${subgraphName}": ${e.message}`);
-        process.exit(1);
+  const promises = [];
+  for (let comboIndex = 0; comboIndex < combos.length; comboIndex++) {
+    promises.push((async (comboIndex, subgraphOffset) => {
+      const { blueprint, variant, environment } = combos[comboIndex];
+      if (!blueprint || !variant) {
+        console.warn(`Skipping subgraph entry #${comboIndex}: missing blueprint or variant`);
+        return;
       }
 
-      // 5b) graph codegen
-      try {
-        console.log(`\nGenerating types for ${subgraphName}...`);
-        await runCommand('graph', ['--version'], { cwd: subgraphFolder });
-        await runCommand('graph', ['codegen', '--output-dir', 'src/types/'], { cwd: subgraphFolder });
-      } catch (e) {
-        console.error(`⚠️ Failed codegen for "${subgraphName}": ${e.message}`);
+      const subgraphName = `${GLOBAL_PREFIX}-combo-${comboIndex}`;
+      const nodeUrlPort = 8020 + subgraphOffset;
+      const ipfsPort    = 5001 + subgraphOffset;
+
+      const nodeUrl = `http://localhost:${nodeUrlPort}`;
+      const ipfsUrl = `http://localhost:${ipfsPort}`;
+
+      const subgraphFolder = path.resolve('../../blueprints', blueprint);
+
+      console.log(`\n=== Deploying Subgraph: ${subgraphName} (node=${nodeUrl}) ===`);
+
+      if (!fs.existsSync(subgraphFolder)) {
+        console.error(`❌ Subgraph folder not found: ${subgraphFolder}`);
+        return;
       }
 
-    } else {
-      console.log(`⚠️ No package.json found for ${subgraphName}, skipping npm install`);
-    }
-
-    // 5c) graph create
-    console.log(`\nCreating subgraph on node: ${nodeUrl}`);
-    for (let attempt = 0; attempt < 30; attempt++) {
-      try {
-        await new Promise((resolve, reject) => {
-          const createProcess = spawn('graph', ['create', subgraphName, '--node', nodeUrl], {
-            stdio: 'inherit',
-            cwd: subgraphFolder,
-            env: { ...process.env, ...environment },
-          });
-          
-          createProcess.on('close', (code) => {
-            if (code !== 0) {
-              reject(new Error(`Process exited with code ${code}`));
-            } else {
-              resolve();
-            }
-          });
-          
-          createProcess.on('error', (err) => {
-            reject(err);
-          });
-        });
-        break;
-      } catch (e) {
-        console.error(`❌ Failed to create subgraph "${subgraphName}": ${e.message}`);
-        if (attempt === 29) {
+      // 5a) npm install
+      if (fs.existsSync(path.resolve(subgraphFolder, 'package.json'))) {
+        console.log(`Installing dependencies in ${subgraphFolder}...`);
+        try {
+          await runCommand('npm', ['install', '--legacy-peer-deps'], { cwd: subgraphFolder });
+        } catch (e) {
+          console.error(`❌ Failed npm install for "${subgraphName}": ${e.message}`);
           process.exit(1);
-        } else {
-          console.log(`Retrying after 5 seconds... (attempt ${attempt + 1} of 10)`);
-          await new Promise(resolve => setTimeout(resolve, 5000));
         }
-      }
-    }
 
-    // 5d) graph deploy
-    console.log(`\nDeploying "${subgraphName}" to ${nodeUrl}...`);
-    for (let attempt = 0; attempt < 30; attempt++) {
-      let deployArgs = [
-        'deploy',
-        subgraphName,
-        'subgraph.yaml',
-        '--ipfs', ipfsUrl,
-        '--node', nodeUrl,
-        '--version-label', '0.0.1',
-      ];
-      if (fs.existsSync(path.resolve(subgraphFolder, 'ipfs.txt'))) {
-        deployArgs = [
-          'deploy',
-          subgraphName,
-          '--ipfs', ipfsUrl,
-          '--node', nodeUrl,
-          '--version-label', '0.0.1',
-          '--ipfs-hash', fs.readFileSync(path.resolve(subgraphFolder, 'ipfs.txt'), 'utf8').trim(),
-        ]
+        // 5b) graph codegen
+        try {
+          console.log(`\nGenerating types for ${subgraphName}...`);
+          await runCommand('graph', ['--version'], { cwd: subgraphFolder });
+          await runCommand('graph', ['codegen', '--output-dir', 'src/types/'], { cwd: subgraphFolder });
+        } catch (e) {
+          console.error(`⚠️ Failed codegen for "${subgraphName}": ${e.message}`);
+        }
+      } else {
+        console.log(`⚠️ No package.json found for ${subgraphName}, skipping npm install`);
       }
-      try {
-        await new Promise((resolve, reject) => {
-          const deployProcess = spawn(
-            'graph',
-            deployArgs,
-            {
+
+      // 5c) graph create
+      console.log(`\nCreating subgraph on node: ${nodeUrl}`);
+      for (let attempt = 0; attempt < 30; attempt++) {
+        try {
+          await new Promise((resolve, reject) => {
+            const createProcess = spawn('graph', ['create', subgraphName, '--node', nodeUrl], {
               stdio: 'inherit',
               cwd: subgraphFolder,
               env: { ...process.env, ...environment },
-            }
-          );
-          
-          deployProcess.on('close', (code) => {
-            if (code !== 0) {
-              reject(new Error(`Process exited with code ${code}`));
-            } else {
-              resolve();
-            }
+            });
+            
+            createProcess.on('close', (code) => {
+              if (code !== 0) {
+                reject(new Error(`Process exited with code ${code}`));
+              } else {
+                resolve();
+              }
+            });
+            
+            createProcess.on('error', (err) => {
+              reject(err);
+            });
           });
-          
-          deployProcess.on('error', (err) => {
-            reject(new Error(`${err.toString()}`));
-          });
-        });
-        break;
-      } catch (e) {
-        console.error(`❌ Failed to deploy subgraph "${subgraphName}": ${e.message}`);
-        if (attempt === 29) {
-          process.exit(1);
-        } else {
-          console.log(`Retrying after 5 seconds... (attempt ${attempt + 1} of 30)`);
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          break;
+        } catch (e) {
+          console.error(`❌ Failed to create subgraph "${subgraphName}": ${e.message}`);
+          if (attempt === 29) {
+            process.exit(1);
+          } else {
+            console.log(`Retrying after 5 seconds... (attempt ${attempt + 1} of 10)`);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
         }
       }
+
+      // 5d) graph deploy
+      console.log(`\nDeploying "${subgraphName}" to ${nodeUrl}...`);
+      for (let attempt = 0; attempt < 30; attempt++) {
+        let deployArgs = [
+          'deploy',
+          subgraphName,
+          'subgraph.yaml',
+          '--ipfs', ipfsUrl,
+          '--node', nodeUrl,
+          '--version-label', '0.0.1',
+        ];
+        if (fs.existsSync(path.resolve(subgraphFolder, 'ipfs.txt'))) {
+          deployArgs = [
+            'deploy',
+            subgraphName,
+            '--ipfs', ipfsUrl,
+            '--node', nodeUrl,
+            '--version-label', '0.0.1',
+            '--ipfs-hash', fs.readFileSync(path.resolve(subgraphFolder, 'ipfs.txt'), 'utf8').trim(),
+          ]
+        }
+        try {
+          await new Promise((resolve, reject) => {
+            const deployProcess = spawn(
+              'graph',
+              deployArgs,
+              {
+                stdio: 'inherit',
+                cwd: subgraphFolder,
+                env: { ...process.env, ...environment },
+              }
+            );
+            
+            deployProcess.on('close', (code) => {
+              if (code !== 0) {
+                reject(new Error(`Process exited with code ${code}`));
+              } else {
+                resolve();
+              }
+            });
+            
+            deployProcess.on('error', (err) => {
+              reject(new Error(`${err.toString()}`));
+            });
+          });
+          break;
+        } catch (e) {
+          console.error(`❌ Failed to deploy subgraph "${subgraphName}": ${e.message}`);
+          if (attempt === 29) {
+            process.exit(1);
+          } else {
+            console.log(`Retrying after 5 seconds... (attempt ${attempt + 1} of 30)`);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
+        }
+      }
+
+      console.log(`✅ Successfully deployed: ${subgraphName}`);
+    })(comboIndex, subgraphOffset).catch((e) => {
+      console.error(`❌ Failed to deploy subgraph "${e?.message || JSON.stringify(e)}"`);
+    }));
+    subgraphOffset += 100;
+  }
+
+  await Promise.all(promises);
+
+  // Now run the monitoring stack
+  {
+    console.log('\n=== Starting monitoring stack ===');
+    const baseArgs = [
+      'compose',
+      '-p', `${GLOBAL_PREFIX}-monitoring`,
+      '-f', 'docker-compose.monitoring.yml',
+    ];
+    try {
+      await runCommand('docker', [
+        ...baseArgs,
+        'down', '-v',
+      ], { env: process.env });
+    } catch (e) {
+      console.error(' ⚠️ Failed to remove existing containers for monitoring stack');
     }
-
-    console.log(`✅ Successfully deployed: ${subgraphName}`);
-  })(comboIndex, subgraphOffset).then(() => {
-    console.log(`✅ Successfully deployed`);
-  }).catch((e) => {
-    console.error(`❌ Failed to deploy subgraph "${e?.message || JSON.stringify(e)}"`);
-  });
-  subgraphOffset += 100;
-}
-
-// Now run the monitoring stack
-{
-  console.log('\n=== Starting monitoring stack ===');
-  const baseArgs = [
-    'compose',
-    '-p', `${GLOBAL_PREFIX}-monitoring`,
-    '-f', 'docker-compose.monitoring.yml',
-  ];
-  try {
     await runCommand('docker', [
       ...baseArgs,
-      'down', '-v',
+      'up', '-d', '--remove-orphans', '--force-recreate', '--build',
     ], { env: process.env });
-  } catch (e) {
-    console.error(' ⚠️ Failed to remove existing containers for monitoring stack');
+    console.log('✅ Monitoring stack is running.');
   }
-  await runCommand('docker', [
-    ...baseArgs,
-    'up', '-d', '--remove-orphans', '--force-recreate', '--build',
-  ], { env: process.env });
-  console.log('✅ Monitoring stack is running.');
-}
-
-console.log('\n✅ Environment generated + all subgraphs deployed!');
+}).then(() => {
+  console.log('\n✅ Environment generated + all subgraphs deployed!');
+}).catch((e) => {
+  console.error(`❌ Failed to generate environment: ${e?.message || JSON.stringify(e)}`);
+  process.exit(1);
+});
