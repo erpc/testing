@@ -497,23 +497,52 @@
       },
       {
         "id": 250,
-        "type": "table",
+        "type": "timeseries",
         "title": "Synced Block",
         "description": "",
         "gridPos": {
           "x": 12,
-          "y": 102,
+          "y": 139,
           "h": 10,
           "w": 12
         },
         "fieldConfig": {
           "defaults": {
             "custom": {
-              "align": "auto",
-              "cellOptions": {
-                "type": "auto"
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "lineWidth": 1,
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "spanNulls": true,
+              "insertNulls": false,
+              "showPoints": "auto",
+              "pointSize": 5,
+              "stacking": {
+                "mode": "none",
+                "group": "A"
               },
-              "inspect": false
+              "axisPlacement": "auto",
+              "axisLabel": "",
+              "axisColorMode": "text",
+              "axisBorderShow": false,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "axisCenteredZero": false,
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "color": {
+              "mode": "palette-classic"
             },
             "mappings": [],
             "thresholds": {
@@ -524,9 +553,6 @@
                   "value": null
                 }
               ]
-            },
-            "color": {
-              "mode": "continuous-RdYlGr"
             }
           },
           "overrides": []
@@ -537,11 +563,11 @@
             "editorMode": "code",
             "exemplar": false,
             "expr": "max(deployment_head) by (job)",
-            "instant": true,
+            "format": "time_series",
+            "instant": false,
             "legendFormat": "{{job}}",
-            "range": false,
-            "refId": "A",
-            "format": "table"
+            "range": true,
+            "refId": "A"
           }
         ],
         "datasource": {
@@ -549,17 +575,17 @@
           "uid": "PBFA97CFB590B2093"
         },
         "options": {
-          "showHeader": true,
-          "cellHeight": "sm",
-          "footer": {
-            "show": false,
-            "reducer": [
-              "sum"
-            ],
-            "countRows": false,
-            "fields": ""
+          "tooltip": {
+            "mode": "single",
+            "sort": "none",
+            "hideZeros": false
           },
-          "frameIndex": 1
+          "legend": {
+            "showLegend": true,
+            "displayMode": "list",
+            "placement": "bottom",
+            "calcs": []
+          }
         }
       },
       {
@@ -577,16 +603,52 @@
       },
       {
         "id": 222,
-        "type": "bargauge",
+        "type": "timeseries",
         "title": "P95 resp. time",
         "gridPos": {
           "x": 0,
-          "y": 101,
+          "y": 126,
           "h": 13,
           "w": 24
         },
         "fieldConfig": {
           "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "lineWidth": 1,
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "insertNulls": false,
+              "showPoints": "auto",
+              "pointSize": 5,
+              "stacking": {
+                "mode": "none",
+                "group": "A"
+              },
+              "axisPlacement": "auto",
+              "axisLabel": "",
+              "axisColorMode": "text",
+              "axisBorderShow": false,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "axisCenteredZero": false,
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "color": {
+              "mode": "palette-classic"
+            },
             "mappings": [
               {
                 "options": {
@@ -642,10 +704,10 @@
               "uid": "PAE45454D0EDB9216"
             },
             "editorMode": "code",
-            "expr": "histogram_quantile(0.95, sum(rate(erpc_upstream_request_duration_seconds_bucket{network!=\"n/a\"}[30s])) by (le, job)) > 0",
+            "expr": "histogram_quantile(0.95, sum(rate(erpc_upstream_request_duration_seconds_bucket{network!=\"n/a\"}[15m])) by (le, job)) > 0",
             "legendFormat": "{{job}}",
-            "refId": "A",
-            "range": true
+            "range": true,
+            "refId": "A"
           }
         ],
         "datasource": {
@@ -653,28 +715,17 @@
           "uid": "${datasource}"
         },
         "options": {
-          "reduceOptions": {
-            "values": false,
-            "calcs": [
-              "lastNotNull"
-            ],
-            "fields": ""
+          "tooltip": {
+            "mode": "single",
+            "sort": "none",
+            "hideZeros": false
           },
-          "orientation": "horizontal",
           "legend": {
-            "showLegend": false,
+            "showLegend": true,
             "displayMode": "list",
             "placement": "bottom",
             "calcs": []
-          },
-          "displayMode": "gradient",
-          "valueMode": "color",
-          "namePlacement": "auto",
-          "showUnfilled": true,
-          "sizing": "auto",
-          "minVizWidth": 8,
-          "minVizHeight": 16,
-          "maxVizHeight": 300
+          }
         }
       },
       {

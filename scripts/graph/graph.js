@@ -4,7 +4,7 @@ import fs, { copyFileSync } from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 import yaml from 'js-yaml';
-import { spawnSync } from 'child_process';
+import { spawn } from 'child_process';
 import os from 'os';
 
 const GLOBAL_PREFIX = "erpc-testing-graph"
@@ -52,9 +52,62 @@ let envOffset = 0;
 let comboIndex = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Helper: run Docker Compose
+// Helpers
 ////////////////////////////////////////////////////////////////////////////////
-function runDockerCompose(projectName, blueprintPath, variantPath, env, filePatterns = [/\.ya?ml$/, /\.toml$/], ignorePatterns = [/.*node_modules.*/, /.*\.git.*/]) {
+function runCommand(command, args, options = {}) {
+  return new Promise((resolve, reject) => {
+    console.log(`Running: ${command} ${args.join(' ')}`);
+    
+    const proc = spawn(command, args, {
+      stdio: options.stdio || 'inherit',
+      cwd: options.cwd || process.cwd(),
+      env: options.env || process.env
+    });
+    
+    let stdout = '';
+    let stderr = '';
+    
+    if (proc.stdout) {
+      proc.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+    }
+    
+    if (proc.stderr) {
+      proc.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+    }
+    
+    proc.on('close', (code) => {
+      if (code !== 0) {
+        reject({
+          command: `${command} ${args.join(' ')}`,
+          code,
+          stdout,
+          stderr,
+          message: `Process exited with code ${code}`
+        });
+      } else {
+        resolve({
+          code,
+          stdout,
+          stderr
+        });
+      }
+    });
+    
+    proc.on('error', (err) => {
+      reject({
+        command: `${command} ${args.join(' ')}`,
+        message: err.toString(),
+        error: err
+      });
+    });
+  });
+}
+
+async function runDockerCompose(projectName, blueprintPath, variantPath, env, filePatterns = [/\.ya?ml$/, /\.toml$/], ignorePatterns = [/.*node_modules.*/, /.*\.git.*/]) {
   const networkName = env.NETWORK_NAME || `${projectName}_net`;
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `${projectName}-`));
   
@@ -108,15 +161,13 @@ function runDockerCompose(projectName, blueprintPath, variantPath, env, filePatt
   copyMatchingFiles(fullBlueprintPath, tempDir);
   copyMatchingFiles(fullVariantPath, tempDir);
   
-  // 1) Remove any existing Docker network
-  spawnSync('docker', ['network', 'rm', networkName], { stdio: 'inherit', cwd: tempDir });
-
-  // 2) (Re)create the Docker network as external.
+  // 1) (Re)create the Docker network as external.
   //    For a normal bridge network, we use '--driver bridge'.
-  spawnSync('docker', ['network', 'create', '--driver', 'bridge', networkName], {
-    stdio: 'inherit',
-    cwd: tempDir,
-  });
+  try {
+    await runCommand('docker', ['network', 'create', '--driver', 'bridge', networkName], { cwd: tempDir });
+  } catch (e) {
+    console.warn(` ⚠️ Failed to create network "${networkName}": ${e.message}`);
+  }
 
   copyFileSync(
     path.resolve(blueprintsBase, blueprintPath, 'docker-compose.yml'),
@@ -136,24 +187,22 @@ function runDockerCompose(projectName, blueprintPath, variantPath, env, filePatt
 
   // 3) Force remove all volumes and existing containers
   try {
-    spawnSync('docker', [
+    await runCommand('docker', [
       ...composeArgsBase,
       'down', '-v',
-    ], { stdio: 'inherit', env: { ...process.env, ...env }, cwd: tempDir });
+    ], { env: { ...process.env, ...env }, cwd: tempDir });
   } catch (e) {
     console.error(` ⚠️ Failed to remove existing containers for ${projectName}`);
   }
 
   // 4) Install NPM dependencies
   if (fs.existsSync(path.resolve(fullBlueprintPath, 'package.json'))) {
-    const installResult = spawnSync('npm', ['install', '--legacy-peer-deps'], {
-      stdio: 'inherit',
-      cwd: fullBlueprintPath,
-    });
-    if (installResult.status !== 0) {
-      throw new Error(`Failed to install npm dependencies for ${projectName}`);
+    try {
+      await runCommand('npm', ['install', '--legacy-peer-deps'], { cwd: fullBlueprintPath });
+      console.log(`✅ Successfully installed npm dependencies for ${projectName}`);
+    } catch (e) {
+      throw new Error(`Failed to install npm dependencies for ${projectName}: ${e.message}`);
     }
-    console.log(`✅ Successfully installed npm dependencies for ${projectName}`);
   } else {
     console.log(`⚠️ No package.json found for ${projectName}, skipping npm install`);
   }
@@ -164,17 +213,15 @@ function runDockerCompose(projectName, blueprintPath, variantPath, env, filePatt
     'up', '-d', '--remove-orphans', '--force-recreate', '--build',
   ];
 
-  const result = spawnSync('docker', composeArgs, {
-    stdio: 'inherit',
-    cwd: tempDir,
-    env: { ...process.env, ...env },
-  });
-
-  if (result.status !== 0) {
-    throw new Error(`docker compose up failed for ${projectName}`);
+  try {
+    await runCommand('docker', composeArgs, {
+      cwd: tempDir,
+      env: { ...process.env, ...env },
+    });
+    console.log(`✅ Successfully started ${projectName}`);
+  } catch (e) {
+    throw new Error(`docker compose up failed for ${projectName}: ${e.message}`);
   }
-
-  console.log(`✅ Successfully started ${projectName}`);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -389,124 +436,150 @@ datasources:
 let subgraphOffset = 0;
 
 for (let comboIndex = 0; comboIndex < combos.length; comboIndex++) {
-  const { blueprint, variant, environment } = combos[comboIndex];
-  if (!blueprint || !variant) {
-    console.warn(`Skipping subgraph entry #${comboIndex}: missing blueprint or variant`);
-    continue;
-  }
-
-  const subgraphName = `${GLOBAL_PREFIX}-combo-${comboIndex}`;
-  const nodeUrlPort = 8020 + subgraphOffset;
-  const ipfsPort    = 5001 + subgraphOffset;
-
-  const nodeUrl = `http://localhost:${nodeUrlPort}`;
-  const ipfsUrl = `http://localhost:${ipfsPort}`;
-
-  const subgraphFolder = path.resolve('../../blueprints', blueprint);
-
-  console.log(`\n=== Deploying Subgraph: ${subgraphName} (node=${nodeUrl}) ===`);
-
-  if (!fs.existsSync(subgraphFolder)) {
-    console.error(`❌ Subgraph folder not found: ${subgraphFolder}`);
-    continue;
-  }
-
-  // 5a) npm install
-  if (fs.existsSync(path.resolve(subgraphFolder, 'package.json'))) {
-    console.log(`Installing dependencies in ${subgraphFolder}...`);
-    const installResult = spawnSync('npm', ['install', '--legacy-peer-deps'], {
-      stdio: 'inherit',
-      cwd: subgraphFolder,
-    });
-    if (installResult.status !== 0) {
-      console.error(`❌ Failed npm install for "${subgraphName}"`);
-      process.exit(installResult.status);
+  (async (comboIndex, subgraphOffset) => {
+    const { blueprint, variant, environment } = combos[comboIndex];
+    if (!blueprint || !variant) {
+      console.warn(`Skipping subgraph entry #${comboIndex}: missing blueprint or variant`);
+      return;
     }
 
-    // 5b) graph codegen
-    try {
-      console.log(`\nGenerating types for ${subgraphName}...`);
-      spawnSync('graph', ['--version'], {
-        stdio: 'inherit',
-        cwd: subgraphFolder,
-      });
-      const codegenResult = spawnSync('graph', ['codegen', '--output-dir', 'src/types/'], {
-        stdio: 'inherit',
-        cwd: subgraphFolder,
-      });
-      if (codegenResult.status !== 0) {
-        console.error(`⚠️ Failed codegen for "${subgraphName}": ${codegenResult?.error?.toString()} ${codegenResult?.stderr?.toString()} ${codegenResult?.stdout?.toString()}`);
-        // process.exit(codegenResult.status);
-      }
-    } catch (e) {
-      console.error(`⚠️ Failed codegen for "${subgraphName}": ${e.message}`);
+    const subgraphName = `${GLOBAL_PREFIX}-combo-${comboIndex}`;
+    const nodeUrlPort = 8020 + subgraphOffset;
+    const ipfsPort    = 5001 + subgraphOffset;
+
+    const nodeUrl = `http://localhost:${nodeUrlPort}`;
+    const ipfsUrl = `http://localhost:${ipfsPort}`;
+
+    const subgraphFolder = path.resolve('../../blueprints', blueprint);
+
+    console.log(`\n=== Deploying Subgraph: ${subgraphName} (node=${nodeUrl}) ===`);
+
+    if (!fs.existsSync(subgraphFolder)) {
+      console.error(`❌ Subgraph folder not found: ${subgraphFolder}`);
+      return;
     }
 
-  } else {
-    console.log(`⚠️ No package.json found for ${subgraphName}, skipping npm install`);
-  }
-
-  // 5c) graph create
-  console.log(`\nCreating subgraph on node: ${nodeUrl}`);
-  for (let attempt = 0; attempt < 30; attempt++) {
-    try {
-      const createResult = spawnSync('graph', ['create', subgraphName, '--node', nodeUrl], {
-        stdio: 'inherit',
-        cwd: subgraphFolder,
-        env: { ...process.env, ...environment },
-      });
-      if (createResult.status !== 0) {
-        throw new Error(`${createResult?.error?.toString()} ${createResult?.stderr?.toString()} ${createResult?.stdout?.toString()}`);
-      }
-      break;
-    } catch (e) {
-      console.error(`❌ Failed to create subgraph "${subgraphName}": ${e.message}`);
-      if (attempt === 29) {
+    // 5a) npm install
+    if (fs.existsSync(path.resolve(subgraphFolder, 'package.json'))) {
+      console.log(`Installing dependencies in ${subgraphFolder}...`);
+      try {
+        await runCommand('npm', ['install', '--legacy-peer-deps'], { cwd: subgraphFolder });
+      } catch (e) {
+        console.error(`❌ Failed npm install for "${subgraphName}": ${e.message}`);
         process.exit(1);
-      } else {
-        console.log(`Retrying after 5 seconds... (attempt ${attempt + 1} of 10)`);
-        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+
+      // 5b) graph codegen
+      try {
+        console.log(`\nGenerating types for ${subgraphName}...`);
+        await runCommand('graph', ['--version'], { cwd: subgraphFolder });
+        await runCommand('graph', ['codegen', '--output-dir', 'src/types/'], { cwd: subgraphFolder });
+      } catch (e) {
+        console.error(`⚠️ Failed codegen for "${subgraphName}": ${e.message}`);
+      }
+
+    } else {
+      console.log(`⚠️ No package.json found for ${subgraphName}, skipping npm install`);
+    }
+
+    // 5c) graph create
+    console.log(`\nCreating subgraph on node: ${nodeUrl}`);
+    for (let attempt = 0; attempt < 30; attempt++) {
+      try {
+        await new Promise((resolve, reject) => {
+          const createProcess = spawn('graph', ['create', subgraphName, '--node', nodeUrl], {
+            stdio: 'inherit',
+            cwd: subgraphFolder,
+            env: { ...process.env, ...environment },
+          });
+          
+          createProcess.on('close', (code) => {
+            if (code !== 0) {
+              reject(new Error(`Process exited with code ${code}`));
+            } else {
+              resolve();
+            }
+          });
+          
+          createProcess.on('error', (err) => {
+            reject(err);
+          });
+        });
+        break;
+      } catch (e) {
+        console.error(`❌ Failed to create subgraph "${subgraphName}": ${e.message}`);
+        if (attempt === 29) {
+          process.exit(1);
+        } else {
+          console.log(`Retrying after 5 seconds... (attempt ${attempt + 1} of 10)`);
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
       }
     }
-  }
 
-  // 5d) graph deploy
-  console.log(`\nDeploying "${subgraphName}" to ${nodeUrl}...`);
-  for (let attempt = 0; attempt < 30; attempt++) {
-    try {
-      const deployResult = spawnSync(
-        'graph',
-        [
+    // 5d) graph deploy
+    console.log(`\nDeploying "${subgraphName}" to ${nodeUrl}...`);
+    for (let attempt = 0; attempt < 30; attempt++) {
+      let deployArgs = [
+        'deploy',
+        subgraphName,
+        'subgraph.yaml',
+        '--ipfs', ipfsUrl,
+        '--node', nodeUrl,
+        '--version-label', '0.0.1',
+      ];
+      if (fs.existsSync(path.resolve(subgraphFolder, 'ipfs.txt'))) {
+        deployArgs = [
           'deploy',
           subgraphName,
-          'subgraph.yaml',
           '--ipfs', ipfsUrl,
           '--node', nodeUrl,
           '--version-label', '0.0.1',
-        ],
-        {
-          stdio: 'inherit',
-          cwd: subgraphFolder,
-          env: { ...process.env, ...environment },
-        }
-      );
-      if (deployResult.status !== 0) {
-        throw new Error(`${deployResult?.error?.toString()} ${deployResult?.stderr?.toString()} ${deployResult?.stdout?.toString()}`);
+          '--ipfs-hash', fs.readFileSync(path.resolve(subgraphFolder, 'ipfs.txt'), 'utf8').trim(),
+        ]
       }
-      break;
-    } catch (e) {
-      console.error(`❌ Failed to deploy subgraph "${subgraphName}": ${e.message}`);
-      if (attempt === 29) {
-        process.exit(1);
-      } else {
-        console.log(`Retrying after 5 seconds... (attempt ${attempt + 1} of 30)`);
-        await new Promise(resolve => setTimeout(resolve, 5000));
+      try {
+        await new Promise((resolve, reject) => {
+          const deployProcess = spawn(
+            'graph',
+            deployArgs,
+            {
+              stdio: 'inherit',
+              cwd: subgraphFolder,
+              env: { ...process.env, ...environment },
+            }
+          );
+          
+          deployProcess.on('close', (code) => {
+            if (code !== 0) {
+              reject(new Error(`Process exited with code ${code}`));
+            } else {
+              resolve();
+            }
+          });
+          
+          deployProcess.on('error', (err) => {
+            reject(new Error(`${err.toString()}`));
+          });
+        });
+        break;
+      } catch (e) {
+        console.error(`❌ Failed to deploy subgraph "${subgraphName}": ${e.message}`);
+        if (attempt === 29) {
+          process.exit(1);
+        } else {
+          console.log(`Retrying after 5 seconds... (attempt ${attempt + 1} of 30)`);
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
       }
     }
-  }
 
-  console.log(`✅ Successfully deployed: ${subgraphName}`);
-
+    console.log(`✅ Successfully deployed: ${subgraphName}`);
+  })(comboIndex, subgraphOffset).then(() => {
+    console.log(`✅ Successfully deployed`);
+  }).catch((e) => {
+    console.error(`❌ Failed to deploy subgraph "${e?.message || JSON.stringify(e)}"`);
+  });
   subgraphOffset += 100;
 }
 
@@ -519,25 +592,17 @@ for (let comboIndex = 0; comboIndex < combos.length; comboIndex++) {
     '-f', 'docker-compose.monitoring.yml',
   ];
   try {
-    spawnSync('docker', [
+    await runCommand('docker', [
       ...baseArgs,
       'down', '-v',
-    ], { stdio: 'inherit', env: process.env });
+    ], { env: process.env });
   } catch (e) {
     console.error(' ⚠️ Failed to remove existing containers for monitoring stack');
   }
-  const monitoringResult = spawnSync(
-    'docker',
-    [
-      ...baseArgs,
-      'up', '-d', '--remove-orphans', '--force-recreate', '--build',
-    ],
-    { stdio: 'inherit', env: process.env }
-  );
-  if (monitoringResult.status !== 0) {
-    console.error('❌ Failed to start monitoring stack with docker-compose.monitoring.yml');
-    process.exit(monitoringResult.status);
-  }
+  await runCommand('docker', [
+    ...baseArgs,
+    'up', '-d', '--remove-orphans', '--force-recreate', '--build',
+  ], { env: process.env });
   console.log('✅ Monitoring stack is running.');
 }
 
