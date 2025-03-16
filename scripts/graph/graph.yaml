@@ -35,40 +35,32 @@
 #   blueprint: graph/chain-1-axie-10k-block-range-10k-triggers
 
 - variant: unspecified-version/chain-1-only-network-level-failsafe
-  blueprint: graph/chain-1-axie-10k-block-range
-# - variant: unspecified-version/chain-1-only-network-level-failsafe
-#   blueprint: graph/chain-1-axie-10k-block-range-100-batch
-# - variant: unspecified-version/chain-1-only-network-level-failsafe
-#   blueprint: graph/chain-1-axie-10k-block-range-500-batch
-# - variant: unspecified-version/chain-1-only-network-level-failsafe
-#   blueprint: graph/chain-1-axie-10k-block-range-1000-batch
-
-# - variant: unspecified-version/chain-1-only-network-level-failsafe
-#   blueprint: graph/chain-1-axie-1k-block-range-500-trigger
-# - variant: unspecified-version/chain-1-only-network-level-failsafe
-#   blueprint: graph/chain-1-axie-3k-block-range-500-trigger
-# - variant: unspecified-version/chain-1-only-network-level-failsafe
-#   blueprint: graph/chain-1-axie-10k-block-range-500-trigger
-# - variant: unspecified-version/chain-1-only-network-level-failsafe
-#   blueprint: graph/chain-1-axie-30k-block-range-500-trigger
-
-# - variant: unspecified-version/chain-1-only-network-level-failsafe
-#   blueprint: graph/chain-1-axie-30k-block-range-100-trigger
-# - variant: unspecified-version/chain-1-only-network-level-failsafe
-#   blueprint: graph/chain-1-axie-30k-block-range-500-trigger
-# - variant: unspecified-version/chain-1-only-network-level-failsafe
-#   blueprint: graph/chain-1-axie-30k-block-range-2000-trigger
-# - variant: unspecified-version/chain-1-only-network-level-failsafe
-#   blueprint: graph/chain-1-axie-30k-block-range-10000-trigger
-
-# - variant: unspecified-version/chain-1-only-network-level-failsafe
-#   blueprint: graph/chain-1-axie-30k-block-range-100-trigger
-# - variant: unspecified-version/chain-1-only-network-level-failsafe
-#   blueprint: graph/chain-1-axie-30k-block-range-500-trigger
-# - variant: unspecified-version/chain-1-only-network-level-failsafe
-#   blueprint: graph/chain-1-axie-30k-block-range-2000-trigger
-# - variant: unspecified-version/chain-1-only-network-level-failsafe
-#   blueprint: graph/chain-1-axie-30k-block-range-10000-trigger
+  blueprint: graph/chain-1-axie-dynamic
+  environment:
+    GRAPH_ETHEREUM_MAX_BLOCK_RANGE_SIZE: 1000000
+    GRAPH_ETHEREUM_MAX_EVENT_ONLY_RANGE: 1000000
+    GRAPH_ETHEREUM_TARGET_TRIGGERS_PER_BLOCK_RANGE: 50000
+    ETHEREUM_BLOCK_BATCH_SIZE: 5000
+    GRAPH_ETHEREUM_BLOCK_INGESTOR_MAX_CONCURRENT_JSON_RPC_CALLS_FOR_TXN_RECEIPTS: 1000
+    MAX_CONCURRENT_JSON_RPC_CALLS: 1000
+- variant: unspecified-version/chain-1-only-network-level-failsafe
+  blueprint: graph/chain-1-axie-dynamic
+  environment:
+    GRAPH_ETHEREUM_MAX_BLOCK_RANGE_SIZE: 5000
+    GRAPH_ETHEREUM_MAX_EVENT_ONLY_RANGE: 5000
+    GRAPH_ETHEREUM_TARGET_TRIGGERS_PER_BLOCK_RANGE: 500
+    ETHEREUM_BLOCK_BATCH_SIZE: 500
+    GRAPH_ETHEREUM_BLOCK_INGESTOR_MAX_CONCURRENT_JSON_RPC_CALLS_FOR_TXN_RECEIPTS: 500
+    MAX_CONCURRENT_JSON_RPC_CALLS: 500
+- variant: unspecified-version/chain-1-only-network-level-failsafe
+  blueprint: graph/chain-1-axie-dynamic
+  environment:
+    GRAPH_ETHEREUM_MAX_BLOCK_RANGE_SIZE: 1000
+    GRAPH_ETHEREUM_MAX_EVENT_ONLY_RANGE: 1000
+    GRAPH_ETHEREUM_TARGET_TRIGGERS_PER_BLOCK_RANGE: 100
+    ETHEREUM_BLOCK_BATCH_SIZE: 100
+    GRAPH_ETHEREUM_BLOCK_INGESTOR_MAX_CONCURRENT_JSON_RPC_CALLS_FOR_TXN_RECEIPTS: 100
+    MAX_CONCURRENT_JSON_RPC_CALLS: 100
 
 # - variant: unspecified-version/chain-1-only-network-level-failsafe
 #   blueprint: graph/chain-1-rocketpool-basic

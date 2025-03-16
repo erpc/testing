@@ -213,6 +213,7 @@ async function runDockerCompose(projectName, blueprintPath, variantPath, env, fi
   ];
 
   try {
+    console.log(`FULL ENVSSSSS ${JSON.stringify({ ...process.env, ...env }, null, 2)}`);
     await runCommand('docker', composeArgs, {
       cwd: tempDir,
       env: { ...process.env, ...env },
