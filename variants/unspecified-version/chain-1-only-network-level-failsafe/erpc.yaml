@@ -45,11 +45,11 @@ projects:
         minBudget: 1                
         maxBudget: 100000  
     upstreams:      
-      - endpoint: alchemy://${ALCHEMY_API_KEY}
-      - endpoint: envio://rpc.hypersync.xyz
-      # - endpoint: https://mainnet.gateway.tenderly.co/${TENDERLY_ACCESS_KEY}
-      - endpoint: https://api-eth-mainnet-archive-reth.dwellir.com/${DWELLIR_API_KEY}
+      # - endpoint: alchemy://${ALCHEMY_API_KEY}
+      # - endpoint: envio://rpc.hypersync.xyz
+      # # - endpoint: https://mainnet.gateway.tenderly.co/${TENDERLY_ACCESS_KEY}
+      # - endpoint: https://api-eth-mainnet-archive-reth.dwellir.com/${DWELLIR_API_KEY}
       - endpoint: https://eth-mainnet.blastapi.io/${BLAST_API_KEY}
-      - endpoint: https://ethereum-mainnet.core.chainstack.com/${CHAINSTACK_ETH_KEY}
-      - endpoint: https://eth.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}
-      - endpoint: ${QUICKNODE_ETH_ENDPOINT}
+      # - endpoint: https://ethereum-mainnet.core.chainstack.com/${CHAINSTACK_ETH_KEY}
+      # - endpoint: https://eth.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}
+      # - endpoint: ${QUICKNODE_ETH_ENDPOINT}

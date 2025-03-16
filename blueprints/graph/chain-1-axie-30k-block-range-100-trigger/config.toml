@@ -18,5 +18,5 @@ ingestor = "default"
 [chains.mainnet]
 shard = "primary"
 provider = [
-  { label = "erpc", url = "http://erpc:4000/main/evm/1", features = ["archive"] }
+  { label = "erpc", url = "http://host.docker.internal:4444/main/evm/1", features = ["archive"] }
 ]

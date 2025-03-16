@@ -68,17 +68,14 @@ services:
       postgres_db: graph-node
       ipfs: host.docker.internal:5001
       OTEL_SPAN_FILTER: graph_chain_ethereum,reqwest_tracing::reqwest_otel_span_builder
-      OTEL_EXPORTER_JAEGER_AGENT_HOST: host.docker.internal
-      OTEL_EXPORTER_JAEGER_AGENT_PORT: 6831
       GRAPH_LOG: ${GRAPH_LOG_LEVEL:-error}
       GRAPH_NODE_CONFIG: /etc/config/config.toml
       ERPC_HTTP_PORT: ${ERPC_HTTP_PORT:-4000}
       GRAPH_ETHEREUM_MAX_BLOCK_RANGE_SIZE: 10000
       GRAPH_ETHEREUM_MAX_EVENT_ONLY_RANGE: 10000
-      GRAPH_ETHEREUM_TARGET_TRIGGERS_PER_BLOCK_RANGE: 1000
+      GRAPH_ETHEREUM_TARGET_TRIGGERS_PER_BLOCK_RANGE: 500
       ETHEREUM_BLOCK_BATCH_SIZE: 10
-      # GRAPH_ETHEREUM_BLOCK_INGESTOR_MAX_CONCURRENT_JSON_RPC_CALLS_FOR_TXN_RECEIPTS: 1000
-
+      # GRAPH_ETHEREUM_BLOCK_INGESTOR_MAX_CONCURRENT_JSON_RPC_CALLS_FOR_TXN_RECEIPTS: 3000
 
       # ETHEREUM_BLOCK_BATCH_SIZE: 1000
       # GRAPH_ETHEREUM_TARGET_TRIGGERS_PER_BLOCK_RANGE: 2000
@@ -91,8 +88,7 @@ services:
     restart: on-failure
     platform: linux/amd64
     networks:
-      - default
-      - monitoring
+      default: {}
 
 volumes:
   ipfsdata: {}
@@ -103,6 +99,3 @@ networks:
   default:
     name: ${NETWORK_NAME}
     external: true
-  monitoring:
-    external: true
-    name: monitoring

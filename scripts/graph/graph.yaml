@@ -35,11 +35,40 @@
 #   blueprint: graph/chain-1-axie-10k-block-range-10k-triggers
 
 - variant: unspecified-version/chain-1-only-network-level-failsafe
-  blueprint: graph/chain-1-axie-30k-block-range-100-trigger
-- variant: unspecified-version/chain-1-only-network-level-failsafe
-  blueprint: graph/chain-1-axie-30k-block-range-500-trigger
-- variant: unspecified-version/chain-1-only-network-level-failsafe
-  blueprint: graph/chain-1-axie-30k-block-range-2000-trigger
+  blueprint: graph/chain-1-axie-10k-block-range
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-10k-block-range-100-batch
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-10k-block-range-500-batch
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-10k-block-range-1000-batch
+
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-1k-block-range-500-trigger
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-3k-block-range-500-trigger
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-10k-block-range-500-trigger
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-30k-block-range-500-trigger
+
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-30k-block-range-100-trigger
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-30k-block-range-500-trigger
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-30k-block-range-2000-trigger
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-30k-block-range-10000-trigger
+
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-30k-block-range-100-trigger
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-30k-block-range-500-trigger
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-30k-block-range-2000-trigger
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-30k-block-range-10000-trigger
 
 # - variant: unspecified-version/chain-1-only-network-level-failsafe
 #   blueprint: graph/chain-1-rocketpool-basic
