@@ -572,7 +572,7 @@ generateEnvironment().then(async () => {
             new Promise((resolve, reject) => {
               setTimeout(() => {
                 reject(new Error('Timeout'));
-              }, 15000);
+              }, 5000);
             })
           ]);
           break;

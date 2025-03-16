@@ -22,11 +22,17 @@
 - variant: unspecified-version/chain-1-only-network-level-failsafe
   blueprint: graph/chain-1-axie-1k-block-range
 
+- variant: unspecified-version/chain-1-only-network-level-failsafe
+  blueprint: graph/chain-1-axie-1k-block-range-1k-triggers
+
 # - variant: unspecified-version/chain-1-only-network-level-failsafe
 #   blueprint: graph/chain-1-axie-3k-block-range
 
 - variant: unspecified-version/chain-1-only-network-level-failsafe
   blueprint: graph/chain-1-axie-10k-block-range
+
+- variant: unspecified-version/chain-1-only-network-level-failsafe
+  blueprint: graph/chain-1-axie-10k-block-range-10k-triggers
 
 # - variant: unspecified-version/chain-1-only-network-level-failsafe
 #   blueprint: graph/chain-1-axie-30k-block-range
