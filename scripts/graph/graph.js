@@ -451,10 +451,11 @@ generateEnvironment().then(async () => {
 
       const subgraphName = `${GLOBAL_PREFIX}-combo-${comboIndex}`;
       const nodeUrlPort = 7400 + comboIndex;
-      const ipfsPort    = 7100 + comboIndex;
+      // const ipfsPort    = 7100 + comboIndex;
 
       const nodeUrl = `http://localhost:${nodeUrlPort}`;
-      const ipfsUrl = `http://localhost:${ipfsPort}`;
+      // const ipfsUrl = `http://localhost:${ipfsPort}`;
+      const ipfsUrl = `http://localhost:5001`;
 
       const subgraphFolder = path.resolve('../../blueprints', blueprint);
 
@@ -571,13 +572,13 @@ generateEnvironment().then(async () => {
             }),
             new Promise((resolve, reject) => {
               setTimeout(() => {
-                reject(new Error('Timeout'));
-              }, 5000);
+                reject(new Error('Timeout creating subgraph!'));
+              }, 30_000);
             })
           ]);
           break;
         } catch (e) {
-          console.error(`❌ Failed to deploy subgraph "${subgraphName}": ${e.message}`);
+          console.error(`❌ Failed to finish deploying subgraph "${subgraphName}": ${e.message}`);
           if (attempt === 29) {
             process.exit(1);
           } else {
@@ -589,7 +590,7 @@ generateEnvironment().then(async () => {
 
       console.log(`✅ Successfully deployed: ${subgraphName}`);
     })(comboIndex).catch((e) => {
-      console.error(`❌ Failed to deploy subgraph "${e?.message || JSON.stringify(e)}"`);
+      console.error(`❌ Failed to run deploy subgraph "${e?.message || JSON.stringify(e)}"`);
     }));
   }
 

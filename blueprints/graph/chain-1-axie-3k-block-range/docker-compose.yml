@@ -27,24 +27,24 @@ services:
     networks:
       default: {}
 
-  ipfs:
-    image: ipfs/kubo:v0.14.0
-    ports:
-      - "${IPFS_PORT:-5001}:5001"
-    volumes:
-      - ipfsdata:/data/ipfs
-    logging:
-      driver: local
-      options:
-        max-size: 5M
-        max-file: "3"
-    healthcheck:
-      test: ["CMD", "ipfs", "id"]
-      interval: 1s
-      timeout: 5s
-      retries: 5
-    networks:
-      default: {}
+  # ipfs:
+  #   image: ipfs/kubo:v0.14.0
+  #   ports:
+  #     - "${IPFS_PORT:-5001}:5001"
+  #   volumes:
+  #     - ipfsdata:/data/ipfs
+  #   logging:
+  #     driver: local
+  #     options:
+  #       max-size: 5M
+  #       max-file: "3"
+  #   healthcheck:
+  #     test: ["CMD", "ipfs", "id"]
+  #     interval: 1s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     default: {}
 
   graph-node:
     image: 716091368358.dkr.ecr.us-west-2.amazonaws.com/graph-node:v0.35.1.16-clickhouse-8 # graphprotocol/graph-node
@@ -55,8 +55,8 @@ services:
       - "${GRAPH_NODE_PORT4:-8030}:8030"
       - "${GRAPH_NODE_PORT5:-8040}:8040"
     depends_on:
-      ipfs:
-        condition: service_healthy
+      # ipfs:
+      #   condition: service_healthy
       postgres:
         condition: service_healthy
     volumes:
@@ -66,9 +66,9 @@ services:
       postgres_user: graph-node
       postgres_pass: let-me-in
       postgres_db: graph-node
-      ipfs: ipfs:5001
+      ipfs: host.docker.internal:5001
       OTEL_SPAN_FILTER: graph_chain_ethereum,reqwest_tracing::reqwest_otel_span_builder
-      GRAPH_LOG: info
+      GRAPH_LOG: debug
       GRAPH_NODE_CONFIG: /etc/config/config.toml
       ERPC_HTTP_PORT: ${ERPC_HTTP_PORT:-4000}
       GRAPH_ETHEREUM_MAX_BLOCK_RANGE_SIZE: 3000

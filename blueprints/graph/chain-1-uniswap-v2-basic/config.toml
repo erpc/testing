@@ -1,5 +1,5 @@
 [[ipfs]]
-url = "http://ipfs:5001"
+url = "http://host.docker.internal:5001"
 client_type = "Cat"
 
 [store]
