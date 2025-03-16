@@ -48,7 +48,6 @@ const blueprintsBase = '../../blueprints';
 const variantsBase   = '../../variants';
 
 // We'll track a port offset for the Docker environment
-let envOffset = 0;
 let comboIndex = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -228,8 +227,9 @@ async function runDockerCompose(projectName, blueprintPath, variantPath, env, fi
 // 4) GENERATE: Loop combos to build environment (Prometheus + Postgres + Grafana)
 ////////////////////////////////////////////////////////////////////////////////
 async function generateEnvironment() {
+  let comboIndex = 0;
   for (const combo of combos) {
-    await (async (combo) => {
+    await (async (combo, comboIndex) => {
       const { blueprint, variant, environment } = combo;
       if (!blueprint || !variant) {
         console.warn('Skipping combo missing blueprint or variant:', combo);
@@ -242,25 +242,23 @@ async function generateEnvironment() {
       // Docker environment ports
       const envVars = {
         NETWORK_NAME: `${projectName}_net`,
-        POSTGRES_PORT: 5432 + envOffset,
-        IPFS_PORT: 5001 + envOffset,
-        GRAPH_NODE_PORT1: 8000 + envOffset,
-        GRAPH_NODE_PORT2: 8001 + envOffset,
-        GRAPH_NODE_PORT3: 8020 + envOffset,
-        GRAPH_NODE_PORT4: 8030 + envOffset,
-        GRAPH_NODE_PORT5: 8040 + envOffset,
-        ELASTICSEARCH_PORT: 9200 + envOffset,
-        ERPC_HTTP_PORT: 4000 + envOffset,
-        ERPC_METRICS_PORT: 4001 + envOffset,
-        ERPC_PPROF_PORT: 6000 + envOffset,
+        POSTGRES_PORT: 7000 + comboIndex,
+        IPFS_PORT: 7100 + comboIndex,
+        GRAPH_NODE_PORT1: 7200 + comboIndex,
+        GRAPH_NODE_PORT2: 7300 + comboIndex,
+        GRAPH_NODE_PORT3: 7400 + comboIndex,
+        GRAPH_NODE_PORT4: 7500 + comboIndex,
+        GRAPH_NODE_PORT5: 7600 + comboIndex,
+        ELASTICSEARCH_PORT: 7700 + comboIndex,
+        ERPC_HTTP_PORT: 7800 + comboIndex,
+        ERPC_METRICS_PORT: 7900 + comboIndex,
+        ERPC_PPROF_PORT: 8000 + comboIndex,
         ...environment,
         ...process.env,
       };
-      envOffset += 100;
-      comboIndex += 1;
 
       // 4a) Spin up Docker containers
-      console.log(`\n=== Starting ${projectName} with offset ${envOffset - 100} ===`);
+      console.log(`\n=== Starting ${projectName} with offset ${comboIndex} ===`);
       try {
         await runDockerCompose(projectName, blueprint, variant, envVars);
       } catch (e) {
@@ -354,7 +352,8 @@ async function generateEnvironment() {
           },
         ],
       });
-    })(combo);
+    })(combo, comboIndex);
+    comboIndex += 1;
   }
 
   // 4e) Now write out Prometheus, Postgres DS, and append to Grafana JSON
@@ -385,7 +384,7 @@ scrape_configs:
   // 4e-2) Write Postgres datasources
   {
     let content = `apiVersion: 1
-  datasources:
+datasources:
   `;
     for (const ds of postgresDatasets) {
       content += `
@@ -438,14 +437,12 @@ scrape_configs:
 ////////////////////////////////////////////////////////////////////////////////
 
 generateEnvironment().then(async () => {
-  console.log('\n=== Environment generated, waiting 30 seconds before deploying subgraphs ===');
-  await new Promise(resolve => setTimeout(resolve, 30000));
-
-  let subgraphOffset = 0;
+  console.log('\n=== Environment generated, waiting 10 seconds before deploying subgraphs ===');
+  await new Promise(resolve => setTimeout(resolve, 10000));
 
   const promises = [];
   for (let comboIndex = 0; comboIndex < combos.length; comboIndex++) {
-    promises.push((async (comboIndex, subgraphOffset) => {
+    promises.push((async (comboIndex) => {
       const { blueprint, variant, environment } = combos[comboIndex];
       if (!blueprint || !variant) {
         console.warn(`Skipping subgraph entry #${comboIndex}: missing blueprint or variant`);
@@ -453,8 +450,8 @@ generateEnvironment().then(async () => {
       }
 
       const subgraphName = `${GLOBAL_PREFIX}-combo-${comboIndex}`;
-      const nodeUrlPort = 8020 + subgraphOffset;
-      const ipfsPort    = 5001 + subgraphOffset;
+      const nodeUrlPort = 7400 + comboIndex;
+      const ipfsPort    = 7100 + comboIndex;
 
       const nodeUrl = `http://localhost:${nodeUrlPort}`;
       const ipfsUrl = `http://localhost:${ipfsPort}`;
@@ -547,29 +544,37 @@ generateEnvironment().then(async () => {
           ]
         }
         try {
-          await new Promise((resolve, reject) => {
-            const deployProcess = spawn(
-              'graph',
-              deployArgs,
-              {
-                stdio: 'inherit',
-                cwd: subgraphFolder,
-                env: { ...process.env, ...environment },
-              }
-            );
-            
-            deployProcess.on('close', (code) => {
-              if (code !== 0) {
-                reject(new Error(`Process exited with code ${code}`));
-              } else {
-                resolve();
-              }
-            });
-            
-            deployProcess.on('error', (err) => {
-              reject(new Error(`${err.toString()}`));
-            });
-          });
+          await Promise.race([
+            new Promise((resolve, reject) => {
+              console.log(`Running: graph ${deployArgs.join(' ')}`);
+              const deployProcess = spawn(
+                'graph',
+                deployArgs,
+                {
+                  stdio: 'inherit',
+                  cwd: subgraphFolder,
+                  env: { ...process.env, ...environment },
+                }
+              );
+              
+              deployProcess.on('close', (code) => {
+                if (code !== 0) {
+                  reject(new Error(`Process exited with code ${code}`));
+                } else {
+                  resolve();
+                }
+              });
+              
+              deployProcess.on('error', (err) => {
+                reject(new Error(`${err.toString()}`));
+              });
+            }),
+            new Promise((resolve, reject) => {
+              setTimeout(() => {
+                reject(new Error('Timeout'));
+              }, 15000);
+            })
+          ]);
           break;
         } catch (e) {
           console.error(`❌ Failed to deploy subgraph "${subgraphName}": ${e.message}`);
@@ -583,10 +588,9 @@ generateEnvironment().then(async () => {
       }
 
       console.log(`✅ Successfully deployed: ${subgraphName}`);
-    })(comboIndex, subgraphOffset).catch((e) => {
+    })(comboIndex).catch((e) => {
       console.error(`❌ Failed to deploy subgraph "${e?.message || JSON.stringify(e)}"`);
     }));
-    subgraphOffset += 100;
   }
 
   await Promise.all(promises);
