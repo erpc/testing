@@ -50,8 +50,15 @@ services:
       - "14268:14268"  # Jaeger collector HTTP
       - "14250:14250"  # Jaeger collector gRPC
       - "9411:9411"  # Zipkin compatible endpoint
+      # - "4317:4317"  # Jaeger collector HTTP
+      # - "4318:4318"  # Jaeger collector gRPC
     environment:
       COLLECTOR_ZIPKIN_HOST_PORT: 9411
+    #   COLLECTOR_OTLP_ENABLED: "true"
+    #   COLLECTOR_DEBUG: "true"
+    #   SAMPLING_STRATEGIES_FILE: /etc/jaeger/sampling_strategies.json
+    # volumes:
+    #   - ./jaeger-sampling.json:/etc/jaeger/sampling_strategies.json
     networks:
       - monitoring
     restart: unless-stopped

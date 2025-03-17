@@ -213,7 +213,6 @@ async function runDockerCompose(projectName, blueprintPath, variantPath, env, fi
   ];
 
   try {
-    console.log(`FULL ENVSSSSS ${JSON.stringify({ ...process.env, ...env }, null, 2)}`);
     await runCommand('docker', composeArgs, {
       cwd: tempDir,
       env: { ...process.env, ...env },
@@ -605,14 +604,6 @@ generateEnvironment().then(async () => {
       '-p', `${GLOBAL_PREFIX}-monitoring`,
       '-f', 'docker-compose.monitoring.yml',
     ];
-    try {
-      await runCommand('docker', [
-        ...baseArgs,
-        'down', '-v',
-      ], { env: process.env });
-    } catch (e) {
-      console.error(' ⚠️ Failed to remove existing containers for monitoring stack');
-    }
     await runCommand('docker', [
       ...baseArgs,
       'up', '-d', '--remove-orphans', '--force-recreate', '--build',

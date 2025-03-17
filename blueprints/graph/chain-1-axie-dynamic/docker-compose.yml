@@ -47,7 +47,7 @@ services:
   #     default: {}
 
   graph-node:
-    image: 716091368358.dkr.ecr.us-west-2.amazonaws.com/graph-node:v0.35.1.16-clickhouse-8 # graphprotocol/graph-node
+    image: ${GRAPH_NODE_IMAGE:-graphprotocol/graph-node}
     ports:
       - "${GRAPH_NODE_PORT1:-8000}:8000"
       - "${GRAPH_NODE_PORT2:-8001}:8001"
@@ -67,9 +67,21 @@ services:
       postgres_pass: let-me-in
       postgres_db: graph-node
       ipfs: host.docker.internal:5001
+      OTEL_SERVICE_NAME: graph-${NETWORK_NAME:-default}
+      # OTEL_EXPORTER_JAEGER_ENDPOINT: http://host.docker.internal:14268/api/traces
       OTEL_EXPORTER_JAEGER_AGENT_HOST: host.docker.internal
       OTEL_EXPORTER_JAEGER_AGENT_PORT: 6832
+      DATADOG_OTEL_HOST: any.dummy.value
+      DATADOG_OTEL_PORT: 1111
+      # OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      # OTEL_EXPORTER_JAEGER_AGENT_HOST: jaeger
+      # OTEL_EXPORTER_JAEGER_AGENT_PORT: 6832
+      # OTEL_EXPORTER_JAEGER_PROTOCOL: http/thrift.binary
+      RUST_LOG: warn,graph=info,graph_node::otel=debug,opentelemetry=debug
       OTEL_SPAN_FILTER: graph_chain_ethereum,reqwest_tracing::reqwest_otel_span_builder
+      # OTEL_TRACES_EXPORTER: jaeger
+      # OTEL_TRACES_SAMPLER: parentbased_traceidratio
+      # OTEL_TRACES_SAMPLER_ARG: "1.0"  # Sample 100% of traces, adjust as needed
       GRAPH_LOG: ${GRAPH_LOG_LEVEL:-error}
       GRAPH_NODE_CONFIG: /etc/config/config.toml
       ERPC_HTTP_PORT: ${ERPC_HTTP_PORT:-4000}
