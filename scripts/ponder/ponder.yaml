@@ -1,0 +1,5 @@
+- variant: unspecified-version/no-config-defaults
+  blueprint: ponder/basepaint
+
+- variant:  unspecified-version/no-config-defaults
+  blueprint: ponder/friendtech
