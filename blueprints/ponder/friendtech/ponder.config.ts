@@ -10,6 +10,10 @@ export default createConfig({
       transport: http(process.env.PONDER_RPC_URL_8453),
     },
   },
+  database: {
+    kind: "postgres",
+    connectionString: "postgresql://graph-node:let-me-in@postgres:5432/graph-node",
+  },
   contracts: {
     FriendtechSharesV1: {
       network: "base",
