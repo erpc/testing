@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import yaml from 'js-yaml';
 
 import { runUnifiedSetup } from './functions/setup.js';
-import { writePrometheus, writeGrafanaPanels } from './functions/monitoringUtils.js';
+import { writePrometheus, writeGrafanaPanels } from './functions/utils.js';
 
 dotenv.config({ path: path.resolve('../../.env') });
 
@@ -17,10 +17,7 @@ const grafanaFile     = './monitoring/grafana/dashboards/grafana.json';
 
 async function main() {
   const combos = loadCombos();
-
   const prometheusScrape = [];
-  const postgresDatasets = [];
-  const newPanels = [];
 
   for (let index = 0; index < combos.length; index++) {
     const combo = combos[index];
@@ -49,16 +46,11 @@ async function main() {
       ponderJob: `ponder-${projectName}`,
       ponderPort: envVars.PONDER_PORT,
     });
-
-    // If you have a Postgres DS for each combo, you can store that info here
-    const dsName = `Postgres-${projectName}`;
-    const dsPort = envVars.POSTGRES_PORT;
-    postgresDatasets.push({ dsName, dsPort });
   }
 
   // Write out monitoring configs
   writePrometheus(prometheusScrape, prometheusFile);
-  writeGrafanaPanels(newPanels, grafanaTemplate, grafanaFile);
+  writeGrafanaPanels(grafanaTemplate, grafanaFile);
 
   console.log('\n=== Monitoring stack started! ===');
 }
@@ -83,12 +75,11 @@ function loadCombos() {
 function buildEnvVars(projectName, index, environment) {
   return {
     NETWORK_NAME: `${projectName}_net`,
-    POSTGRES_PORT: 7000 + index,
-    IPFS_PORT: 7100 + index,
     PONDER_PORT: 7200 + index,
-    ERPC_HTTP_PORT: 7800 + index,
-    ERPC_METRICS_PORT: 7900 + index,
-    ERPC_PPROF_PORT: 8000 + index,
+    POSTGRES_PORT: 7100 + index,
+    ERPC_HTTP_PORT: 7200 + index,
+    ERPC_METRICS_PORT: 7300 + index,
+    ERPC_PPROF_PORT: 7400 + index,
     ...environment,
     ...process.env,
   };
