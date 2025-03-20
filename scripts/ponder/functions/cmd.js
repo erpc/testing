@@ -8,7 +8,7 @@ import os from 'os';
  */
 export function runCommand(command, args, options = {}) {
   return new Promise((resolve, reject) => {
-    console.log(`Running: ${command} ${args.join(' ')}`);
+    console.log(`🏭 Running: ${command} ${args.join(' ')}`);
     const proc = spawn(command, args, {
       stdio: options.stdio || 'inherit',
       cwd: options.cwd || process.cwd(),
@@ -123,7 +123,7 @@ export async function retryAction(action, retries, delayMs, errorMessage) {
       if (attempt >= retries) {
         throw new Error(`${errorMessage} after ${attempt} attempts`);
       }
-      console.log(`Retrying in ${delayMs} ms (attempt ${attempt}/${retries})`);
+      console.log(`🔁 Retrying in ${delayMs} ms (attempt ${attempt}/${retries})`);
       await sleep(delayMs);
     }
   }

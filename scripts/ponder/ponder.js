@@ -5,8 +5,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import yaml from 'js-yaml';
 
-import { runErpcSetup } from './functions/erpcSetup.js';
-import { runPonderSetup } from './functions/ponderSetup.js';
+import { runUnifiedSetup } from './functions/setup.js';
 import { writePrometheus, writeGrafanaPanels } from './functions/monitoringUtils.js';
 
 dotenv.config({ path: path.resolve('../../.env') });
@@ -35,8 +34,13 @@ async function main() {
     const envVars = buildEnvVars(projectName, index, environment);
 
     console.log(`\n=== Starting ${projectName} ===`);
-    await runErpcSetup(projectName, variant, envVars);
-    await runPonderSetup(projectName, blueprint, envVars);
+
+    await runUnifiedSetup(
+      projectName,
+      path.resolve('../../blueprints', blueprint),
+      path.resolve('../../variants', variant),
+      envVars
+    );
 
     // Collect info for Prometheus
     prometheusScrape.push({
@@ -46,7 +50,7 @@ async function main() {
       ponderPort: envVars.PONDER_PORT,
     });
 
-    // Collect info for Postgres
+    // If you have a Postgres DS for each combo, you can store that info here
     const dsName = `Postgres-${projectName}`;
     const dsPort = envVars.POSTGRES_PORT;
     postgresDatasets.push({ dsName, dsPort });
