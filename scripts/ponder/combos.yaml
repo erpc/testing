@@ -1,18 +1,5 @@
-- variant: latest/no-config-defaults
+- variant: unspecified-version/chain-1-only-network-level-failsafe
   blueprint: ponder/basepaint
 
-- variant: latest/no-config-defaults
+- variant:  unspecified-version/chain-1-only-network-level-failsafe
   blueprint: ponder/friendtech
-
-- variant: latest/only-network-level-failsafe
-  blueprint: ponder/basepaint
-  
-- variant: latest/only-network-level-failsafe
-  blueprint: ponder/friendtech
-
-- variant: latest/no-config-defaults
-  blueprint: graph/uniswap-v2
-
-- variant: latest/only-network-level-failsafe
-  blueprint: graph/uniswap-v2
-
