@@ -1,0 +1,17 @@
+[sources.docker]
+type = "docker_logs"
+
+[transforms.erpc]
+type = "remap"
+inputs = ["docker"]
+source = """
+  .docker_labels = .docker.container_labels
+  .
+"""
+
+[sinks.loki]
+type     = "loki"
+inputs   = ["docker"]
+endpoint = "http://loki:3100"
+labels   = { "container" = "{{ container_name }}" }
+encoding.codec = "text"

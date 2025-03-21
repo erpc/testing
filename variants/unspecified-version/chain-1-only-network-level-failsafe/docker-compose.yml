@@ -1,31 +1,31 @@
-services: {}
-  # erpc:
-  #   image: ghcr.io/erpc/erpc:${ERPC_VERSION}
-  #   restart: unless-stopped
-  #   command: ["/root/erpc-server-pprof"]
-  #   ports:
-  #     - "${ERPC_HTTP_PORT}:4000"
-  #     - "${ERPC_METRICS_PORT}:4001"
-  #     - "${ERPC_PPROF_PORT}:6060"
-  #   volumes:
-  #     - ./erpc.yaml:/root/erpc.yaml:ro
-  #   networks:
-  #     default: {}
-  #   environment:
-  #     LOG_LEVEL: "${LOG_LEVEL}"
-  #     ALCHEMY_API_KEY: "${ALCHEMY_API_KEY}"
-  #     TENDERLY_ACCESS_KEY: "${TENDERLY_ACCESS_KEY}"
-  #     DWELLIR_API_KEY: "${DWELLIR_API_KEY}"
-  #     BLAST_API_KEY: "${BLAST_API_KEY}"
-  #     CHAINSTACK_ETH_KEY: "${CHAINSTACK_ETH_KEY}"
-  #     QUICKNODE_ETH_ENDPOINT: "${QUICKNODE_ETH_ENDPOINT}"
-  #     ONFINALITY_API_KEY: "${ONFINALITY_API_KEY}"
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:4000/healthcheck" ]
-  #     interval: 15s
-  #     timeout: 5s
-  #     retries: 6
-  #     start_period: 20s
+services: 
+  erpc:
+    image: ghcr.io/erpc/erpc:${ERPC_VERSION}
+    restart: unless-stopped
+    command: ["/root/erpc-server-pprof"]
+    ports:
+      - "${ERPC_HTTP_PORT}:4000"
+      - "${ERPC_METRICS_PORT}:4001"
+      - "${ERPC_PPROF_PORT}:6060"
+    volumes:
+      - ./erpc.yaml:/root/erpc.yaml:ro
+    networks:
+      default: {}
+    environment:
+      LOG_LEVEL: "${LOG_LEVEL}"
+      ALCHEMY_API_KEY: "${ALCHEMY_API_KEY}"
+      TENDERLY_ACCESS_KEY: "${TENDERLY_ACCESS_KEY}"
+      DWELLIR_API_KEY: "${DWELLIR_API_KEY}"
+      BLAST_API_KEY: "${BLAST_API_KEY}"
+      CHAINSTACK_ETH_KEY: "${CHAINSTACK_ETH_KEY}"
+      QUICKNODE_ETH_ENDPOINT: "${QUICKNODE_ETH_ENDPOINT}"
+      ONFINALITY_API_KEY: "${ONFINALITY_API_KEY}"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/healthcheck" ]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
 
 networks:
   default:

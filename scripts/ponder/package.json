@@ -1,8 +1,11 @@
 {
-  "name": "integration",
+  "name": "ponder-erpc-integration-testing",
   "version": "1.0.0",
-  "description": "Integration testing for eRPC",
+  "description": "Ponder + eRPC integration testing",
   "type": "module",
+  "scripts": {
+    "start": "npm i && node ponder.js"
+  },
   "dependencies": {
     "dotenv": "^16.4.7",
     "execa": "^9.5.2",
