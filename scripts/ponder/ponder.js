@@ -5,12 +5,12 @@ import path from 'path';
 import dotenv from 'dotenv';
 import yaml from 'js-yaml';
 
-import { runUnifiedSetup } from './functions/setup.js';
+import { runComboSetup, runMonitoringSetup } from './functions/setup.js';
 import { writePrometheus, writeGrafanaPanels } from './functions/utils.js';
 
 dotenv.config({ path: path.resolve('../../.env') });
 
-const GLOBAL_PREFIX = 'erpc-testing-ponder';
+export const GLOBAL_PREFIX = 'erpc-testing-ponder';
 const prometheusFile = './monitoring/prometheus/prometheus.yml';
 const grafanaTemplate = './monitoring/grafana/dashboards/grafana.template.json';
 const grafanaFile     = './monitoring/grafana/dashboards/grafana.json';
@@ -32,7 +32,7 @@ async function main() {
 
     console.log(`\n=== Starting ${projectName} ===`);
 
-    await runUnifiedSetup(
+    await runComboSetup(
       projectName,
       path.resolve('../../blueprints', blueprint),
       path.resolve('../../variants', variant),
@@ -52,7 +52,9 @@ async function main() {
   writePrometheus(prometheusScrape, prometheusFile);
   writeGrafanaPanels(grafanaTemplate, grafanaFile);
 
-  console.log('\n=== Monitoring stack started! ===');
+  // Start monitoring stack
+  await runMonitoringSetup();
+
 }
 
 // ------------------------------------------------------------------------

@@ -3,6 +3,8 @@ import path from 'path';
 import os from 'os';
 import { runCommand } from './cmd.js';
 
+import { GLOBAL_PREFIX } from '../ponder.js';
+
 
 function copyAllFiles(source, dest) {
   if (!fs.existsSync(source)) {
@@ -25,12 +27,12 @@ function copyAllFiles(source, dest) {
   }
 }
 
-export async function runUnifiedSetup(projectName, blueprintPath, variantPath, envVars) {
+export async function runComboSetup(projectName, blueprintPath, variantPath, envVars) {
   const networkName = envVars.NETWORK_NAME || `${projectName}_net`;
   try {
     await runCommand('docker', ['network', 'create', '--driver', 'bridge', networkName]);
   } catch (e) {
-    console.warn(` ⚠️ Could not create network "${networkName}": ${e.message}`);
+    console.warn(`🟡 network ${networkName} already exists`);
   }
 
   // Make a temp directory for Docker Compose
@@ -81,4 +83,30 @@ export async function runUnifiedSetup(projectName, blueprintPath, variantPath, e
   });
 
   console.log(`✅ Unified Docker Compose for ${projectName} is up!`);
+}
+
+export async function runMonitoringSetup() {
+  console.log('\n=== Starting monitoring stack ===');
+
+    const baseArgs = [
+      'compose',
+      '-p', `${GLOBAL_PREFIX}-monitoring`,
+      '-f', 'docker-compose.monitoring.yml',
+    ];
+
+
+    await runCommand('docker', ['network', 'create', '--driver', 'bridge', 'monitoring'])
+    .catch((err) => {
+      if (!String(err.stderr || '').includes('already exists')) {
+        console.warn(`🟡 network monitoring already exists`);
+      }
+    });
+
+
+    await runCommand('docker', [
+      ...baseArgs,
+      'up', '-d', '--remove-orphans', '--force-recreate', '--build',
+    ], { env: process.env });
+
+    console.log('✅ Monitoring stack is running.');
 }
