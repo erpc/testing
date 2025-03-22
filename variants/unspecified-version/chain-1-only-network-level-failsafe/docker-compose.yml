@@ -7,8 +7,6 @@ services:
       - "${ERPC_HTTP_PORT}:4000"
       - "${ERPC_METRICS_PORT}:4001"
       - "${ERPC_PPROF_PORT}:6060"
-    volumes:
-      - ./erpc.yaml:/root/erpc.yaml:ro
     networks:
       default: {}
     environment:

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { runCommand } from './cmd.js';
+import { runCommand } from './utils.js';
 
 import { GLOBAL_PREFIX } from '../ponder.js';
 
