@@ -105,7 +105,10 @@ export async function runMonitoringSetup() {
 
     await runCommand('docker', [
       ...baseArgs,
-      'up', '-d', '--remove-orphans', '--force-recreate', '--build',
+      'up', '-d',
+      '--remove-orphans',
+      '--force-recreate',
+      '--build',
     ], { env: process.env });
 
     console.log('✅ Monitoring stack is running.');

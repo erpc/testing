@@ -77,11 +77,11 @@ function loadCombos() {
 function buildEnvVars(projectName, index, environment) {
   return {
     NETWORK_NAME: `${projectName}_net`,
-    PONDER_PORT: 7200 + index,
-    POSTGRES_PORT: 7100 + index,
-    ERPC_HTTP_PORT: 7200 + index,
-    ERPC_METRICS_PORT: 7300 + index,
-    ERPC_PPROF_PORT: 7400 + index,
+    PONDER_PORT: 7100 + index,
+    POSTGRES_PORT: 7200 + index,
+    ERPC_HTTP_PORT: 7300 + index,
+    ERPC_METRICS_PORT: 7400 + index,
+    ERPC_PPROF_PORT: 7500 + index,
     ...environment,
     ...process.env,
   };

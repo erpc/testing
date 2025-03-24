@@ -73,7 +73,6 @@ scrape_configs:
 
     content += `
   - job_name: ${c.ponderJob}
-    metrics_path: "/metrics"
     static_configs:
       - targets: ['host.docker.internal:${c.ponderPort}']
 `;
