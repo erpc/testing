@@ -10,7 +10,7 @@ COPY . .
 
 EXPOSE 42069
 
-ENV NODE_ENV=production
-ENV PONDER_TELEMETRY_DISABLED=true
+# ENV NODE_ENV=production
+# ENV PONDER_TELEMETRY_DISABLED=true
 
-CMD [ "npm", "start" ]
+CMD [ "npm", "run", "dev" ]
