@@ -1,0 +1,5 @@
+- variant: unspecified-version/chain-8453-only-network-level-failsafe
+  blueprint: ponder/basepaint
+
+- variant: unspecified-version/chain-8453-only-network-level-failsafe
+  blueprint: ponder/friendtech

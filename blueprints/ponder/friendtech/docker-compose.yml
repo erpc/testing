@@ -1,0 +1,6 @@
+services:
+  ponder:
+    build: "."
+    restart: on-failure
+    ports:
+      - "${PONDER_PORT}:42069"

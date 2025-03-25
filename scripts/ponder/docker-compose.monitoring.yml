@@ -1,0 +1,78 @@
+services:
+  monitoring:
+    build: ./monitoring
+    container_name: monitoring
+    ports:
+      - "3000:3000"  # Grafana
+      - "9090:9090"  # Prometheus
+    volumes:
+      - prometheus_data:/prometheus
+      - grafana_data:/var/lib/grafana
+    networks:
+      - monitoring
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    networks:
+      - monitoring
+    command: -config.file=/etc/loki/local-config.yaml
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  vector:
+    image: timberio/vector:0.45.0-debian
+    container_name: vector
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./vector.toml:/etc/vector/vector.toml:ro
+    depends_on:
+      loki:
+        condition: service_healthy
+    networks:
+      - monitoring
+    command: ["--config", "/etc/vector/vector.toml"]
+  
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - "16686:16686"  # UI
+      - "6831:6831/udp"  # Jaeger agent thrift compact protocol
+      - "6832:6832/udp"  # Jaeger agent thrift binary protocol
+      - "5778:5778"  # Agent configs
+      - "14268:14268"  # Jaeger collector HTTP
+      - "14250:14250"  # Jaeger collector gRPC
+      - "9411:9411"  # Zipkin compatible endpoint
+      # - "4317:4317"  # Jaeger collector HTTP
+      # - "4318:4318"  # Jaeger collector gRPC
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: 9411
+    #   COLLECTOR_OTLP_ENABLED: "true"
+    #   COLLECTOR_DEBUG: "true"
+    #   SAMPLING_STRATEGIES_FILE: /etc/jaeger/sampling_strategies.json
+    # volumes:
+    #   - ./jaeger-sampling.json:/etc/jaeger/sampling_strategies.json
+    networks:
+      - monitoring
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  prometheus_data: {}
+  grafana_data: {}
+networks:
+  monitoring:
+    name: monitoring
+    external: true
