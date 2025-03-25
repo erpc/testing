@@ -3,6 +3,8 @@ services:
     image: ghcr.io/erpc/erpc:${ERPC_VERSION}
     restart: unless-stopped
     command: ["/root/erpc-server-pprof"]
+    volumes:
+      - ./erpc.yaml:/root/erpc.yaml:ro   
     ports:
       - "${ERPC_HTTP_PORT}:4000"
       - "${ERPC_METRICS_PORT}:4001"

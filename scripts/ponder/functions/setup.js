@@ -28,7 +28,8 @@ function copyAllFiles(source, dest) {
 
 export async function runComboSetup(projectName, blueprintPath, variantPath, envVars) {
   // Make a temp directory for Docker Compose
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `${projectName}-`));
+  const homeDir = process.env.HOME || os.homedir();
+  const tempDir = fs.mkdtempSync(path.join(homeDir, `.docker-tmp-${projectName}-`));
   console.log(`📁 Using tempDir for unified compose: ${tempDir}`);
 
   const networkName = envVars.NETWORK_NAME || `${projectName}_net`;
@@ -84,8 +85,8 @@ export async function runComboSetup(projectName, blueprintPath, variantPath, env
     '--force-recreate',
     '--build',
   ], {
-    cwd: tempDir,
     env: { ...process.env, ...envVars },
+    cwd: tempDir,
   });
 
   console.log(`✅ Unified Docker Compose for ${projectName} is up!`);
