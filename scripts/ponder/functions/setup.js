@@ -32,6 +32,8 @@ export async function runComboSetup(projectName, blueprintPath, variantPath, env
   const tempDir = fs.mkdtempSync(path.join(homeDir, `.docker-tmp-${projectName}-`));
   console.log(`📁 Using tempDir for unified compose: ${tempDir}`);
 
+
+  // Create a network for the project
   const networkName = envVars.NETWORK_NAME || `${projectName}_net`;
   try {
     await runCommand('docker', ['network', 'create', '--driver', 'bridge', networkName], { cwd: tempDir });
@@ -39,7 +41,7 @@ export async function runComboSetup(projectName, blueprintPath, variantPath, env
     console.warn(`🟡 network ${networkName} already exists`);
   }
 
-  // 1) Copy blueprint files into the same tempDir
+  // Copy blueprint files into the same tempDir
   copyAllFiles(blueprintPath, tempDir);
 
   // Rename docker-compose.yml from blueprint to docker-compose.blueprint.yml
@@ -51,7 +53,7 @@ export async function runComboSetup(projectName, blueprintPath, variantPath, env
     console.warn(`⚠️ No docker-compose.yml found in blueprint path: ${blueprintPath}`);
   }
 
-  // 2) Copy variant files into the same tempDir
+  // Copy variant files into the same tempDir
   copyAllFiles(variantPath, tempDir);
 
   // Rename docker-compose.yml from variant to docker-compose.variant.yml
