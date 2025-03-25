@@ -23,7 +23,7 @@ projects:
     networks:
       - architecture: evm
         evm:
-          chainId: 1
+          chainId: 8453
     upstreamDefaults:
       evm:
         getLogsMaxBlockRange: 2000
