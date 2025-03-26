@@ -5,11 +5,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import yaml from 'js-yaml';
 
-<<<<<<< HEAD
 import { runComboSetup, runMonitoringSetup } from './functions/setup.js';
-=======
-import { runUnifiedSetup } from './functions/setup.js';
->>>>>>> 07b204f (refactor: reorganize monitoring utilities and streamline setup process)
 import { writePrometheus, writeGrafanaPanels } from './functions/utils.js';
 
 dotenv.config({ path: path.resolve('../../.env') });
@@ -55,12 +51,9 @@ async function main() {
   // Write out monitoring configs
   writePrometheus(prometheusScrape, prometheusFile);
   writeGrafanaPanels(grafanaTemplate, grafanaFile);
-<<<<<<< HEAD
 
   // Start monitoring stack
   await runMonitoringSetup();
-=======
->>>>>>> 07b204f (refactor: reorganize monitoring utilities and streamline setup process)
 
 }
 
@@ -84,19 +77,11 @@ function loadCombos() {
 function buildEnvVars(projectName, index, environment) {
   return {
     NETWORK_NAME: `${projectName}_net`,
-<<<<<<< HEAD
     PONDER_PORT: 7100 + index,
     POSTGRES_PORT: 7200 + index,
     ERPC_HTTP_PORT: 7300 + index,
     ERPC_METRICS_PORT: 7400 + index,
     ERPC_PPROF_PORT: 7500 + index,
-=======
-    PONDER_PORT: 7200 + index,
-    POSTGRES_PORT: 7100 + index,
-    ERPC_HTTP_PORT: 7200 + index,
-    ERPC_METRICS_PORT: 7300 + index,
-    ERPC_PPROF_PORT: 7400 + index,
->>>>>>> 07b204f (refactor: reorganize monitoring utilities and streamline setup process)
     ...environment,
     ...process.env,
   };
