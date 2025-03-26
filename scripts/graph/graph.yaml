@@ -1,2 +1,72 @@
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-uniswap-v2-basic
+
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-uniswap-v2-20k-block-range
+
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-uniswap-v3-basic
+
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-uniswap-v3-20k-block-range
+
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-uniswap-v3-100k-block-range
+
+# - variant: latest/no-config-defaults
+#   blueprint: graph/uniswap-v3
+
+# - variant: latest/no-config-defaults
+#   blueprint: graph/uniswap-v4
+
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-1k-block-range
+
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-1k-block-range-1k-triggers
+
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-3k-block-range
+
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-10k-block-range
+
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-axie-10k-block-range-10k-triggers
+
 - variant: unspecified-version/chain-1-only-network-level-failsafe
-  blueprint: graph/chain-1-uniswap-v2-basic
+  blueprint: graph/chain-1-axie-dynamic
+  environment:
+    GRAPH_NODE_IMAGE: 716091368358.dkr.ecr.us-west-2.amazonaws.com/graph-node:v0.35.1.16-clickhouse-8
+    GRAPH_ETHEREUM_MAX_BLOCK_RANGE_SIZE: 100000
+    GRAPH_ETHEREUM_MAX_EVENT_ONLY_RANGE: 100000
+    GRAPH_ETHEREUM_TARGET_TRIGGERS_PER_BLOCK_RANGE: 1000
+    ETHEREUM_BLOCK_BATCH_SIZE: 1000
+    GRAPH_ETHEREUM_BLOCK_INGESTOR_MAX_CONCURRENT_JSON_RPC_CALLS_FOR_TXN_RECEIPTS: 1000
+    MAX_CONCURRENT_JSON_RPC_CALLS: 1000
+- variant: unspecified-version/chain-1-only-network-level-failsafe
+  blueprint: graph/chain-1-axie-dynamic
+  environment:
+    GRAPH_NODE_IMAGE: 716091368358.dkr.ecr.us-west-2.amazonaws.com/graph-node:v0.35.1.16-clickhouse-8
+    GRAPH_ETHEREUM_MAX_BLOCK_RANGE_SIZE: 3000
+    GRAPH_ETHEREUM_MAX_EVENT_ONLY_RANGE: 3000
+    GRAPH_ETHEREUM_TARGET_TRIGGERS_PER_BLOCK_RANGE: 300
+    ETHEREUM_BLOCK_BATCH_SIZE: 300
+    GRAPH_ETHEREUM_BLOCK_INGESTOR_MAX_CONCURRENT_JSON_RPC_CALLS_FOR_TXN_RECEIPTS: 300
+    MAX_CONCURRENT_JSON_RPC_CALLS: 300
+- variant: unspecified-version/chain-1-only-network-level-failsafe
+  blueprint: graph/chain-1-axie-dynamic
+  environment:
+    GRAPH_NODE_IMAGE: 716091368358.dkr.ecr.us-west-2.amazonaws.com/graph-node:v0.35.1.16-clickhouse-8
+    GRAPH_ETHEREUM_MAX_BLOCK_RANGE_SIZE: 1000
+    GRAPH_ETHEREUM_MAX_EVENT_ONLY_RANGE: 1000
+    GRAPH_ETHEREUM_TARGET_TRIGGERS_PER_BLOCK_RANGE: 100
+    ETHEREUM_BLOCK_BATCH_SIZE: 100
+    GRAPH_ETHEREUM_BLOCK_INGESTOR_MAX_CONCURRENT_JSON_RPC_CALLS_FOR_TXN_RECEIPTS: 100
+    MAX_CONCURRENT_JSON_RPC_CALLS: 100
+
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-rocketpool-basic
+
+# - variant: unspecified-version/chain-1-only-network-level-failsafe
+#   blueprint: graph/chain-1-rocketpool-100k-block-range

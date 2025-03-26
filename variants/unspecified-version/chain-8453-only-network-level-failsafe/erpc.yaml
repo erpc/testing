@@ -41,4 +41,11 @@ projects:
         minBudget: 1                
         maxBudget: 100000  
     upstreams:      
-      - endpoint: https://base-mainnet.blastapi.io/5a41b4fd-8f3c-4060-9cdc-521ba39e0a90
+      - endpoint: envio://rpc.hypersync.xyz
+      - endpoint: alchemy://${ALCHEMY_API_KEY}
+      - endpoint: https://bas-mainnet.gateway.tenderly.co/${TENDERLY_ACCESS_KEY}
+      - endpoint: https://base-mainnet.blastapi.io/${BLAST_API_KEY}
+      - endpoint: https://base-mainnet.core.chainstack.com/${CHAINSTACK_ETH_KEY}
+      - endpoint: https://base.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}
+      - endpoint: ${QUICKNODE_ETH_ENDPOINT}
+
