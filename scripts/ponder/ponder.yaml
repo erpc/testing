@@ -1,5 +1,11 @@
-- variant: unspecified-version/no-config-defaults
-  blueprint: ponder/friendtech
+# - variant: unspecified-version/no-config-defaults
+#   blueprint: ponder/friendtech
 
 - variant: unspecified-version/chain-8453-only-network-level-failsafe
   blueprint: ponder/friendtech
+  environment:
+    PONDER_RPC_URL_8453: http://erpc:4000/main/evm/8453
+
+- blueprint: ponder/friendtech
+  environment:
+    PONDER_RPC_URL_8453: https://base-mainnet.blastapi.io/5a41b4fd-8f3c-4060-9cdc-521ba39e0a90

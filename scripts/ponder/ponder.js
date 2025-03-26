@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
@@ -22,11 +20,14 @@ async function main() {
   for (let index = 0; index < combos.length; index++) {
     const combo = combos[index];
     const { blueprint, variant, environment } = combo;
-    if (!blueprint || !variant) {
-      console.warn('Skipping combo missing blueprint or variant:', combo);
+
+    // Skip if there is no blueprint
+    if (!blueprint) {
+      console.warn('Skipping combo missing blueprint:', combo);
       continue;
     }
 
+    // Build project name and environment variables
     const projectName = `${GLOBAL_PREFIX}-combo-${index}`;
     const envVars = buildEnvVars(projectName, index, environment);
 
@@ -35,7 +36,7 @@ async function main() {
     await runComboSetup(
       projectName,
       path.resolve('../../blueprints', blueprint),
-      path.resolve('../../variants', variant),
+      variant ? path.resolve('../../variants', variant) : null, // Pass null if no variant
       envVars
     );
 
@@ -54,7 +55,6 @@ async function main() {
 
   // Start monitoring stack
   await runMonitoringSetup();
-
 }
 
 // ------------------------------------------------------------------------
@@ -82,11 +82,10 @@ function buildEnvVars(projectName, index, environment) {
     ERPC_HTTP_PORT: 7300 + index,
     ERPC_METRICS_PORT: 7400 + index,
     ERPC_PPROF_PORT: 7500 + index,
-    ...environment,
-    ...process.env,
+    ...environment,       // Use environment from combo
+    ...process.env,       // Then override with your global .env
   };
 }
-
 
 main().catch((err) => {
   console.error(`❌ Top-level error: ${err.message || err}`);

@@ -32,7 +32,6 @@ export async function runComboSetup(projectName, blueprintPath, variantPath, env
   const tempDir = fs.mkdtempSync(path.join(homeDir, `.docker-tmp-${projectName}-`));
   console.log(`📁 Using tempDir for unified compose: ${tempDir}`);
 
-
   // Create a network for the project
   const networkName = envVars.NETWORK_NAME || `${projectName}_net`;
   try {
@@ -41,10 +40,10 @@ export async function runComboSetup(projectName, blueprintPath, variantPath, env
     console.warn(`🟡 network ${networkName} already exists`);
   }
 
-  // Copy blueprint files into the same tempDir
+  // Copy blueprint files into tempDir
   copyAllFiles(blueprintPath, tempDir);
 
-  // Rename docker-compose.yml from blueprint to docker-compose.blueprint.yml
+  // Rename blueprint’s compose file
   const blueprintComposeFile = path.join(tempDir, 'docker-compose.yml');
   const blueprintComposeRenamed = path.join(tempDir, 'docker-compose.blueprint.yml');
   if (fs.existsSync(blueprintComposeFile)) {
@@ -53,33 +52,38 @@ export async function runComboSetup(projectName, blueprintPath, variantPath, env
     console.warn(`⚠️ No docker-compose.yml found in blueprint path: ${blueprintPath}`);
   }
 
-  // Copy variant files into the same tempDir
-  copyAllFiles(variantPath, tempDir);
+  // If variant path is provided, copy and rename those files as well
+  let variantComposeRenamed = null;
+  if (variantPath) {
+    copyAllFiles(variantPath, tempDir);
 
-  // Rename docker-compose.yml from variant to docker-compose.variant.yml
-  const variantComposeFile = path.join(tempDir, 'docker-compose.yml');
-  const variantComposeRenamed = path.join(tempDir, 'docker-compose.variant.yml');
-  if (fs.existsSync(variantComposeFile)) {
-    fs.renameSync(variantComposeFile, variantComposeRenamed);
-  } else {
-    console.warn(`⚠️ No docker-compose.yml found in variant path: ${variantPath}`);
+    const variantComposeFile = path.join(tempDir, 'docker-compose.yml');
+    variantComposeRenamed = path.join(tempDir, 'docker-compose.variant.yml');
+    if (fs.existsSync(variantComposeFile)) {
+      fs.renameSync(variantComposeFile, variantComposeRenamed);
+    } else {
+      console.warn(`⚠️ No docker-compose.yml found in variant path: ${variantPath}`);
+      variantComposeRenamed = null; 
+    }
   }
 
-  // Build the base arguments for docker-compose
+  // Build up the docker-compose arguments
   const composeArgsBase = [
     'compose',
     '-p', projectName,
     '-f', blueprintComposeRenamed,
-    '-f', variantComposeRenamed,
   ];
+  if (variantComposeRenamed) {
+    composeArgsBase.push('-f', variantComposeRenamed);
+  }
 
-  // Bring down (if any are running), remove volumes
+  // Bring down any existing containers
   await runCommand('docker', [...composeArgsBase, 'down', '-v'], {
     cwd: tempDir,
     env: { ...process.env, ...envVars },
   });
 
-  // Bring everything back up
+  // Bring everything up
   await runCommand('docker', [
     ...composeArgsBase,
     'up', '-d',
@@ -93,6 +97,7 @@ export async function runComboSetup(projectName, blueprintPath, variantPath, env
 
   console.log(`✅ Unified Docker Compose for ${projectName} is up!`);
 }
+
 
 export async function runMonitoringSetup() {
   console.log('\n=== Starting monitoring stack ===');

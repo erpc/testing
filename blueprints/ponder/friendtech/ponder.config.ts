@@ -12,7 +12,7 @@ export default createConfig({
   },
   database: {
     kind: "postgres",
-    connectionString: "postgresql://graph-node:let-me-in@postgres:5432/graph-node",
+    connectionString: "postgresql://ponder:let-me-in@postgres:5432/ponder",
   },
   contracts: {
     FriendtechSharesV1: {
