@@ -34,6 +34,13 @@ services:
         condition: service_healthy
     ports:
       - "${PONDER_PORT}:42069"
+    networks:
+      default: {}
 
 volumes:
   postgresdata: {}
+
+networks:
+  default:
+    name: ${NETWORK_NAME}
+    external: true
