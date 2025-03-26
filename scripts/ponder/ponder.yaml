@@ -8,4 +8,4 @@
 
 - blueprint: ponder/friendtech
   environment:
-    PONDER_RPC_URL_8453: https://base-mainnet.blastapi.io/5a41b4fd-8f3c-4060-9cdc-521ba39e0a90
+    PONDER_RPC_URL_8453: https://base-mainnet.blastapi.io/XXX
