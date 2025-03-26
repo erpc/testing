@@ -1,4 +1,5 @@
 import fs from 'fs';
+<<<<<<< HEAD
 import { spawn } from 'child_process';
 
 export function runCommand(command, args, options = {}) {
@@ -55,6 +56,8 @@ export async function retryAction(action, retries, delayMs, errorMessage) {
 export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+=======
+>>>>>>> 07b204f (refactor: reorganize monitoring utilities and streamline setup process)
 
 export function writePrometheus(prometheusScrape, prometheusFile) {
   let content = `
@@ -73,6 +76,10 @@ scrape_configs:
 
     content += `
   - job_name: ${c.ponderJob}
+<<<<<<< HEAD
+=======
+    metrics_path: "/metrics"
+>>>>>>> 07b204f (refactor: reorganize monitoring utilities and streamline setup process)
     static_configs:
       - targets: ['host.docker.internal:${c.ponderPort}']
 `;
